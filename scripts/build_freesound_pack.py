@@ -3,9 +3,11 @@
 Build a Launchpad-style pack from Freesound loops (WAV only, duration ≤ 8 s).
 
 Requirements:
-  - Freesound API key: https://freesound.org/apiv2/apply/ → FREESOUND_API_KEY
-  - OAuth2 access token for downloads (original WAV): FREESOUND_ACCESS_TOKEN
+  - Search: FREESOUND_API_KEY (Token from https://freesound.org/apiv2/apply/) and/or
+    FREESOUND_ACCESS_TOKEN (OAuth Bearer — can be used for search if no API key)
+  - WAV download: FREESOUND_ACCESS_TOKEN (OAuth2)
     Obtain once: python3 scripts/freesound_oauth_token.py
+    (OAuth callback http://127.0.0.1:8766/callback — not 8765 where server.py runs)
 
 Usage (from repo root):
   python3 scripts/build_freesound_pack.py --stub   # no API; synthesized WAV placeholders
@@ -67,15 +69,77 @@ def safe_seg(s: str) -> str:
     return re.sub(r"\s+", "_", s) or "slot"
 
 
-def api_request(path: str, *, token: str, bearer: str | None = None) -> bytes:
+def api_request(path: str, *, token: str = "", bearer: str | None = None) -> bytes:
     url = path if path.startswith("http") else f"{API_BASE}{path}"
-    auth = f"Bearer {bearer}" if bearer else f"Token {token}"
+    if bearer:
+        auth = f"Bearer {bearer}"
+    elif token:
+        auth = f"Token {token}"
+    else:
+        raise RuntimeError("Need FREESOUND_API_KEY and/or FREESOUND_ACCESS_TOKEN")
     req = urllib.request.Request(url, headers={"Authorization": auth, "User-Agent": "session-pad-grid-freesound/1.0"})
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        return resp.read()
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            return resp.read()
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8", errors="replace")
+        hint = ""
+        if e.code == 401:
+            hint = (
+                " — check FREESOUND_API_KEY (Token from apiv2/apply) "
+                "or FREESOUND_ACCESS_TOKEN (OAuth Bearer); do not swap them."
+            )
+        raise RuntimeError(f"API {path}: HTTP {e.code}{hint}\n{err_body}".strip()) from e
 
 
-def search_loops(token: str, query: str, *, wav_only: bool, page_size: int = 15) -> list[dict]:
+def _search_auth_works(*, token: str, bearer: str | None) -> bool:
+    try:
+        api_request("/search/text/?query=test&page_size=1", token=token, bearer=bearer)
+        return True
+    except RuntimeError:
+        return False
+
+
+def resolve_search_credentials(api_key: str, access_token: str) -> tuple[str, str | None]:
+    """
+    Pick credentials for /search/text/.
+    Prefer Token API key; if it returns 401 and OAuth token is set, fall back to Bearer.
+    """
+    if api_key and _search_auth_works(token=api_key, bearer=None):
+        return api_key, None
+    if api_key and access_token:
+        print(
+            "FREESOUND_API_KEY rejected (Invalid token). Using FREESOUND_ACCESS_TOKEN for search.",
+            file=sys.stderr,
+        )
+        print(
+            "  Either unset FREESOUND_API_KEY or set it to the Api key from "
+            "https://freesound.org/apiv2/apply/ (not client id/secret).",
+            file=sys.stderr,
+        )
+        if _search_auth_works(token="", bearer=access_token):
+            return "", access_token
+    if access_token and _search_auth_works(token="", bearer=access_token):
+        return "", access_token
+    if api_key and not access_token:
+        raise RuntimeError(
+            "FREESOUND_API_KEY is invalid. Get the Api key from https://freesound.org/apiv2/apply/ "
+            "or run scripts/freesound_oauth_token.py and set FREESOUND_ACCESS_TOKEN."
+        )
+    raise RuntimeError(
+        "FREESOUND_ACCESS_TOKEN is invalid or expired (OAuth tokens last ~24h). "
+        "Run: python3 scripts/freesound_oauth_token.py"
+    )
+
+
+def search_loops(
+    token: str,
+    query: str,
+    *,
+    wav_only: bool,
+    page_size: int = 15,
+    bearer: str | None = None,
+) -> list[dict]:
     filt = (
         f'duration:[0.3 TO {MAX_DURATION_SEC}] '
         f'license:"Creative Commons 0"'
@@ -90,13 +154,19 @@ def search_loops(token: str, query: str, *, wav_only: bool, page_size: int = 15)
         "page_size": str(page_size),
     }
     qs = urllib.parse.urlencode(params)
-    raw = api_request(f"/search/text/?{qs}", token=token)
+    raw = api_request(f"/search/text/?{qs}", token=token, bearer=bearer)
     data = json.loads(raw.decode("utf-8"))
     return list(data.get("results") or [])
 
 
-def search_loop_wav(token: str, query: str, page_size: int = 15) -> list[dict]:
-    return search_loops(token, query, wav_only=True, page_size=page_size)
+def search_loop_wav(
+    token: str,
+    query: str,
+    page_size: int = 15,
+    *,
+    bearer: str | None = None,
+) -> list[dict]:
+    return search_loops(token, query, wav_only=True, page_size=page_size, bearer=bearer)
 
 
 def preview_url_from_sound(sound: dict) -> str | None:
@@ -131,29 +201,134 @@ def download_sound_wav(sound_id: int, dest: Path, *, token: str, bearer: str) ->
     ensure_stereo_wav(dest)
 
 
-def ensure_stereo_wav(path: Path) -> None:
-    """Duplicate mono WAV to stereo so the app’s pan controls behave consistently."""
-    with wave.open(str(path), "rb") as wf:
-        ch = wf.getnchannels()
-        sw = wf.getsampwidth()
-        rate = wf.getframerate()
-        n = wf.getnframes()
-        frames = wf.readframes(n)
-    if ch >= 2:
-        return
-    if sw != 2:
-        raise RuntimeError(f"{path}: only 16-bit PCM supported, got width {sw}")
-    samples = struct.unpack(f"<{n}h", frames)
-    stereo = []
-    for s in samples:
-        stereo.extend((s, s))
+def _float_to_int16(f: float) -> int:
+    f = max(-1.0, min(1.0, f))
+    return int(f * 32767.0)
+
+
+def _int24_le_to_int16(b0: int, b1: int, b2: int) -> int:
+    v = b0 | (b1 << 8) | (b2 << 16)
+    if v & 0x800000:
+        v -= 1 << 24
+    return max(-32768, min(32767, v >> 8))
+
+
+def _read_pcm24_samples(data: bytes, *, channels: int, block_align: int) -> list[int]:
+    """24-bit PCM: 3 bytes/sample, or 4 bytes/sample when block-aligned with padding."""
+    bytes_per_sample = block_align // channels if block_align >= channels else 3
+    if bytes_per_sample <= 3:
+        if len(data) % 3 != 0:
+            raise RuntimeError(f"24-bit PCM data length {len(data)} not multiple of 3")
+        out: list[int] = []
+        for i in range(0, len(data), 3):
+            out.append(_int24_le_to_int16(data[i], data[i + 1], data[i + 2]))
+        return out
+    if len(data) % 4 != 0:
+        raise RuntimeError(f"24-bit PCM (padded) data length {len(data)} not multiple of 4")
+    return [max(-32768, min(32767, struct.unpack_from("<i", data, i)[0] >> 8)) for i in range(0, len(data), 4)]
+
+
+def _read_wav_samples(path: Path) -> tuple[int, int, list[int]]:
+    """Read WAV as interleaved int16 samples (PCM 8/16/24/32-bit, IEEE float 32-bit)."""
+    buf = path.read_bytes()
+    if len(buf) < 12 or buf[:4] != b"RIFF" or buf[8:12] != b"WAVE":
+        raise RuntimeError(f"{path}: not a RIFF WAVE file")
+    pos = 12
+    fmt: bytes | None = None
+    data: bytes | None = None
+    while pos + 8 <= len(buf):
+        chunk_id = buf[pos : pos + 4]
+        chunk_size = struct.unpack_from("<I", buf, pos + 4)[0]
+        chunk_start = pos + 8
+        chunk_end = chunk_start + chunk_size
+        if chunk_end > len(buf):
+            break
+        if chunk_id == b"fmt ":
+            fmt = buf[chunk_start:chunk_end]
+        elif chunk_id == b"data":
+            data = buf[chunk_start:chunk_end]
+        pos = chunk_end + (chunk_size % 2)
+    if not fmt or not data:
+        raise RuntimeError(f"{path}: missing fmt or data chunk")
+    if len(fmt) < 16:
+        raise RuntimeError(f"{path}: fmt chunk too short")
+    w_format = struct.unpack_from("<H", fmt, 0)[0]
+    channels = struct.unpack_from("<H", fmt, 2)[0]
+    rate = struct.unpack_from("<I", fmt, 4)[0]
+    bits = struct.unpack_from("<H", fmt, 14)[0]
+    block_align = struct.unpack_from("<H", fmt, 12)[0] if len(fmt) >= 14 else 0
+    if channels < 1 or channels > 2:
+        raise RuntimeError(f"{path}: expected mono or stereo, got {channels} channels")
+
+    if w_format == 1:  # PCM
+        if bits == 16:
+            samples = list(struct.unpack(f"<{len(data) // 2}h", data))
+        elif bits == 8:
+            u8 = struct.unpack(f"<{len(data)}B", data)
+            samples = [(s - 128) * 256 for s in u8]
+        elif bits == 24:
+            samples = _read_pcm24_samples(data, channels=channels, block_align=block_align)
+        elif bits == 32:
+            samples = [
+                max(-32768, min(32767, struct.unpack_from("<i", data, i)[0] >> 16))
+                for i in range(0, len(data), 4)
+            ]
+        else:
+            raise RuntimeError(f"{path}: unsupported PCM {bits}-bit")
+    elif w_format == 3:  # IEEE float
+        if bits != 32:
+            raise RuntimeError(f"{path}: unsupported float WAV {bits}-bit")
+        floats = struct.unpack(f"<{len(data) // 4}f", data)
+        samples = [_float_to_int16(f) for f in floats]
+    else:
+        raise RuntimeError(f"{path}: unsupported WAV format tag {w_format} (need PCM or IEEE float)")
+
+    return rate, channels, samples
+
+
+def _write_pcm16_stereo_wav(path: Path, rate: int, interleaved: list[int]) -> None:
     tmp = path.with_suffix(".tmp.wav")
     with wave.open(str(tmp), "wb") as out:
         out.setnchannels(2)
         out.setsampwidth(2)
         out.setframerate(rate)
-        out.writeframes(struct.pack(f"<{len(stereo)}h", *stereo))
+        out.writeframes(struct.pack(f"<{len(interleaved)}h", *interleaved))
     tmp.replace(path)
+
+
+def ensure_stereo_wav(path: Path) -> None:
+    """Normalize to 16-bit PCM stereo (mono duplicated) for the web player."""
+    try:
+        with wave.open(str(path), "rb") as wf:
+            if wf.getnchannels() >= 2 and wf.getsampwidth() == 2:
+                return
+            rate = wf.getframerate()
+            n = wf.getnframes()
+            ch = wf.getnchannels()
+            sw = wf.getsampwidth()
+            frames = wf.readframes(n)
+        if sw != 2:
+            raise wave.Error("non-16-bit")
+        samples = list(struct.unpack(f"<{len(frames) // 2}h", frames))
+        if ch == 1:
+            stereo = []
+            for s in samples:
+                stereo.extend((s, s))
+            _write_pcm16_stereo_wav(path, rate, stereo)
+        return
+    except wave.Error:
+        pass
+
+    rate, channels, samples = _read_wav_samples(path)
+    if channels >= 2:
+        if channels != 2:
+            raise RuntimeError(f"{path}: only mono/stereo supported")
+        stereo = samples
+    else:
+        stereo = []
+        for s in samples:
+            stereo.extend((s, s))
+    _write_pcm16_stereo_wav(path, rate, stereo)
 
 
 def make_loop_entry(
@@ -192,7 +367,8 @@ def make_loop_entry(
 def build_pack(
     *,
     token: str,
-    bearer: str,
+    search_bearer: str | None,
+    download_bearer: str,
     cols: int,
     rows: int,
     used_ids: set[int],
@@ -211,7 +387,7 @@ def build_pack(
         for row in range(rows):
             row_letter = ROW_NAMES[row]
             name = f"{kind} {row_letter}{col + 1}"
-            results = search_loop_wav(token, f"{query} {row_letter}")
+            results = search_loop_wav(token, f"{query} {row_letter}", bearer=search_bearer)
             picked = None
             for cand in results:
                 sid = int(cand["id"])
@@ -236,7 +412,7 @@ def build_pack(
             wav_path = base / cat / "loop" / kind / safe_seg(name) / file_name
 
             print(f"  [{loop_idx}] {name} ← Freesound {sid} ({picked.get('name')}) {picked.get('duration')}s")
-            download_sound_wav(sid, wav_path, token=token, bearer=bearer)
+            download_sound_wav(sid, wav_path, token=token, bearer=download_bearer)
 
             lid = str(loop_idx)
             loop = make_loop_entry(lid, col, row, cat, kind, name, file_name, rel_path)
@@ -279,6 +455,7 @@ def build_pack(
 def build_pack_remote_urls(
     *,
     token: str,
+    bearer: str | None,
     cols: int,
     rows: int,
     used_ids: set[int],
@@ -297,7 +474,7 @@ def build_pack_remote_urls(
         for row in range(rows):
             row_letter = ROW_NAMES[row]
             name = f"{kind} {row_letter}{col + 1}"
-            results = search_loops(token, f"{query} {row_letter}", wav_only=False)
+            results = search_loops(token, f"{query} {row_letter}", wav_only=False, bearer=bearer)
             picked = None
             preview = None
             for cand in results:
@@ -534,16 +711,26 @@ def main() -> None:
         print("Reload the app (Local soundlib → Freesound Loops).")
         return
 
-    token = os.environ.get("FREESOUND_API_KEY", "").strip()
-    if not token:
-        print("Set FREESOUND_API_KEY (https://freesound.org/apiv2/apply/)", file=sys.stderr)
+    api_key = os.environ.get("FREESOUND_API_KEY", "").strip()
+    bearer = os.environ.get("FREESOUND_ACCESS_TOKEN", "").strip()
+    if not api_key and not bearer:
+        print(
+            "Set FREESOUND_API_KEY (https://freesound.org/apiv2/apply/) and/or "
+            "FREESOUND_ACCESS_TOKEN (python3 scripts/freesound_oauth_token.py)",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    try:
+        search_token, search_bearer = resolve_search_credentials(api_key, bearer)
+    except RuntimeError as e:
+        print(e, file=sys.stderr)
         sys.exit(1)
 
     if args.remote_urls:
         print(f"Building {SLUG_REMOTE} ({cols}×{rows}, remote preview URLs, CC0 only)…")
         used: set[int] = set()
         pack, credits = build_pack_remote_urls(
-            token=token, cols=cols, rows=rows, used_ids=used
+            token=search_token, bearer=search_bearer, cols=cols, rows=rows, used_ids=used
         )
         if not pack["loops"]:
             print("No loops with preview URLs — check API key and filters.", file=sys.stderr)
@@ -558,7 +745,6 @@ def main() -> None:
         print("Load: Custom URL → …/soundlib/freesound-remote/pack.json (or catalog.freesound-remote.json)")
         return
 
-    bearer = os.environ.get("FREESOUND_ACCESS_TOKEN", "").strip()
     if not bearer:
         print(
             "Set FREESOUND_ACCESS_TOKEN for WAV download (OAuth2).\n"
@@ -569,7 +755,14 @@ def main() -> None:
 
     print(f"Building {SLUG} ({cols}×{rows} loops, WAV ≤{MAX_DURATION_SEC}s, CC0 only)…")
     used: set[int] = set()
-    pack, credits = build_pack(token=token, bearer=bearer, cols=cols, rows=rows, used_ids=used)
+    pack, credits = build_pack(
+        token=search_token,
+        search_bearer=search_bearer,
+        download_bearer=bearer,
+        cols=cols,
+        rows=rows,
+        used_ids=used,
+    )
     if not pack["loops"]:
         print("No loops downloaded — check API credentials and filters.", file=sys.stderr)
         sys.exit(1)

@@ -3,7 +3,7 @@
 One-time helper: obtain a Freesound OAuth2 access token for downloading original WAV files.
 
 1. Create an API application at https://freesound.org/apiv2/apply/
-2. Set redirect URI to http://localhost:8765/callback (or any URL you control)
+2. Set redirect URI to http://127.0.0.1:8766/callback (or any URL you control)
 3. export FREESOUND_CLIENT_ID=... FREESOUND_CLIENT_SECRET=...
 4. python3 scripts/freesound_oauth_token.py
 5. export FREESOUND_ACCESS_TOKEN=<printed token>
@@ -22,18 +22,20 @@ import urllib.request
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-REDIRECT = os.environ.get("FREESOUND_REDIRECT_URI", "http://localhost:8765/callback")
+REDIRECT = os.environ.get("FREESOUND_REDIRECT_URI", "http://127.0.0.1:8766/callback")
 AUTH_URL = "https://freesound.org/apiv2/oauth2/authorize/"
-TOKEN_URL = "https://freesound.org/apiv2/oauth2/token/"
+TOKEN_URL = "https://freesound.org/apiv2/oauth2/access_token/"
 
 
 class _Handler(BaseHTTPRequestHandler):
     code: str | None = None
+    oauth_error: str | None = None
 
     def do_GET(self) -> None:  # noqa: N802
         parsed = urllib.parse.urlparse(self.path)
         qs = urllib.parse.parse_qs(parsed.query)
         _Handler.code = (qs.get("code") or [None])[0]
+        _Handler.oauth_error = (qs.get("error") or [None])[0]
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.end_headers()
@@ -65,11 +67,14 @@ def main() -> None:
     webbrowser.open(url)
 
     parsed = urllib.parse.urlparse(REDIRECT)
-    port = parsed.port or 8765
+    port = parsed.port or 8766
     server = HTTPServer((parsed.hostname or "127.0.0.1", port), _Handler)
     print(f"Waiting for callback on {REDIRECT} …")
     server.handle_request()
     code = _Handler.code
+    if _Handler.oauth_error:
+        print(f"Freesound denied access: {_Handler.oauth_error}", file=sys.stderr)
+        sys.exit(1)
     if not code:
         print("No authorization code received.", file=sys.stderr)
         sys.exit(1)
@@ -80,7 +85,6 @@ def main() -> None:
             "client_secret": client_secret,
             "grant_type": "authorization_code",
             "code": code,
-            "redirect_uri": REDIRECT,
         }
     ).encode("utf-8")
     req = urllib.request.Request(
@@ -89,8 +93,15 @@ def main() -> None:
         method="POST",
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8", errors="replace")
+        print(f"Token exchange failed: HTTP {e.code} {e.reason}", file=sys.stderr)
+        if err_body:
+            print(err_body, file=sys.stderr)
+        sys.exit(1)
     token = data.get("access_token")
     if not token:
         print("Token response:", data, file=sys.stderr)

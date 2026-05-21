@@ -23,7 +23,7 @@ Built with `scripts/build_freesound_pack.py` (see `soundlib/FREESOUND-SAMPLES-LI
 | Mode | Command | Output | Needs |
 |------|---------|--------|--------|
 | **Stub** (no API) | `python3 scripts/build_freesound_pack.py --stub` | `soundlib/freesound-loops/` — synthesized WAV + `pack.json` | Nothing |
-| **WAV loops** (≤8 s, CC0) | `python3 scripts/build_freesound_pack.py` | `soundlib/freesound-loops/` — original WAV + `pack.json` | `FREESOUND_API_KEY` + `FREESOUND_ACCESS_TOKEN` ([OAuth helper](scripts/freesound_oauth_token.py)) |
+| **WAV loops** (≤8 s, CC0) | `python3 scripts/build_freesound_pack.py` | `soundlib/freesound-loops/` — original WAV + `pack.json` | `FREESOUND_ACCESS_TOKEN` (OAuth; [helper](scripts/freesound_oauth_token.py)). Search also accepts `FREESOUND_API_KEY` (Token from apiv2/apply) instead of the access token. |
 | **Remote preview URLs** | `python3 scripts/build_freesound_pack.py --remote-urls` | `soundlib/freesound-remote/pack.json` only — each `loop.url` is `https://…` preview MP3/OGG | API key only |
 
 After **stub** or **WAV** build, add or confirm `{ slug: "freesound-loops", … }` in `js/config.js` `SAMPLE_PACKS`, then **Local soundlib** → **Freesound Loops**. Or **Custom URL** → `http://127.0.0.1:8765/soundlib/catalog.freesound.json`.
@@ -472,7 +472,7 @@ python3 -m http.server 8765
 | `scripts/generate_novation_catalog.py` | Refresh Novation catalog files from live Arcade. |
 | `scripts/generate_demo_packs.py` | Regenerate committed `demo-pulse` / `demo-echo` WAVs + `pack.json`. |
 | `scripts/build_freesound_pack.py` | Freesound loops: `--stub`, WAV download, or `--remote-urls`. |
-| `scripts/freesound_oauth_token.py` | One-time OAuth2 token for Freesound original WAV download. |
+| `scripts/freesound_oauth_token.py` | One-time OAuth2 token; Freesound redirect `http://127.0.0.1:8766/callback`. |
 | `soundlib/FREESOUND-SAMPLES-LICENSE.md` | Freesound build notes and credits template. |
 | `app.js` | Boots `js/runtime.js` (bump `?v=` on the import after `js/` changes). |
 | `js/pack-url.js` | Resolve/normalize remote `pack.json` URLs and `file://` → local `soundlib/` paths. |
