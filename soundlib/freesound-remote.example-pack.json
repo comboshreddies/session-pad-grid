@@ -1,0 +1,41 @@
+{
+  "lights": [],
+  "loops": [
+    {
+      "category": "Drums",
+      "file": "12345_preview_hq.mp3",
+      "gain": "0",
+      "kind": "Kick",
+      "loopId": "0",
+      "loopLength": 16,
+      "name": "Kick A1",
+      "url": "https://freesound.org/media/previews/123/12345_preview_hq.mp3",
+      "padData": {
+        "channelId": 0,
+        "rowId": 0,
+        "pad": {
+          "gain": { "dB": "0" },
+          "loopId": "0",
+          "trigger": { "type": "loop", "syncTo": "bar" }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    }
+  ],
+  "session": {
+    "channels": [
+      [
+        {
+          "gain": { "dB": "0" },
+          "loopId": "0",
+          "trigger": { "type": "loop", "syncTo": "bar" }
+        }
+      ]
+    ],
+    "tempo": 120,
+    "timingSample": null,
+    "title": "Example — one remote Freesound preview (replace URL from API)",
+    "patternLength": 16
+  }
+}

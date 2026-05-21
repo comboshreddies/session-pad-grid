@@ -1,0 +1,15 @@
+{
+  "title": "Demo packs (GitHub Pages — comboshreddies/session-pad-grid)",
+  "packs": [
+    {
+      "slug": "demo-echo",
+      "title": "Demo Echo (original)",
+      "url": "https://comboshreddies.github.io/session-pad-grid/soundlib/demo-echo/pack.json"
+    },
+    {
+      "slug": "demo-pulse",
+      "title": "Demo Pulse (original)",
+      "url": "https://comboshreddies.github.io/session-pad-grid/soundlib/demo-pulse/pack.json"
+    }
+  ]
+}

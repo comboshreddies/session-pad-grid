@@ -1,0 +1,6 @@
+{
+  "packs": [
+    { "slug": "demo-pulse", "title": "Demo Pulse (original)" },
+    { "slug": "demo-echo", "title": "Demo Echo (original)" }
+  ]
+}

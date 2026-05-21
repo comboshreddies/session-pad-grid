@@ -1,0 +1,70 @@
+{
+  "title": "Novation Launchpad Arcade (local proxy via server.py)",
+  "packs": [
+    {
+      "slug": "analogue-jewels",
+      "title": "Analogue Jewels",
+      "pack": "/novation/packs/analogue-jewels/pack.json"
+    },
+    {
+      "slug": "clap-trap",
+      "title": "Clap Trap",
+      "pack": "/novation/packs/clap-trap/pack.json"
+    },
+    {
+      "slug": "future-house-fusion",
+      "title": "Future House Fusion",
+      "pack": "/novation/packs/future-house-fusion/pack.json"
+    },
+    {
+      "slug": "harry-coade",
+      "title": "Harry Coade // Found Sound",
+      "pack": "/novation/packs/harry-coade/pack.json"
+    },
+    {
+      "slug": "hazy-beat",
+      "title": "Hazy Beat",
+      "pack": "/novation/packs/hazy-beat/pack.json"
+    },
+    {
+      "slug": "high-roller",
+      "title": "High Roller",
+      "pack": "/novation/packs/high-roller/pack.json"
+    },
+    {
+      "slug": "hypnotic-energy",
+      "title": "Hypnotic Energy",
+      "pack": "/novation/packs/hypnotic-energy/pack.json"
+    },
+    {
+      "slug": "kaskobi-nytrix",
+      "title": "Kaskobi // Nytrix - Stay Here Forever",
+      "pack": "/novation/packs/kaskobi-nytrix/pack.json"
+    },
+    {
+      "slug": "nick-hook",
+      "title": "Nick Hook",
+      "pack": "/novation/packs/nick-hook/pack.json"
+    },
+    {
+      "slug": "retro-grain",
+      "title": "Retro Grain",
+      "pack": "/novation/packs/retro-grain/pack.json"
+    },
+    {
+      "slug": "sugar-vape",
+      "title": "Sugar Vape",
+      "pack": "/novation/packs/sugar-vape/pack.json"
+    },
+    {
+      "slug": "viral-hiphop",
+      "title": "Viral Hiphop",
+      "pack": "/novation/packs/viral-hiphop/pack.json"
+    },
+    {
+      "slug": "wonk-pop",
+      "title": "Wonk Pop",
+      "pack": "/novation/packs/wonk-pop/pack.json"
+    }
+  ]
+}

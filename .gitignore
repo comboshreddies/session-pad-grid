@@ -1,0 +1,27 @@
+# OS / editor
+.DS_Store
+*.swp
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Large or generated audio libraries under soundlib/ (recreate with scripts in repo root)
+soundlib/*
+!soundlib/DEMO-SAMPLES-LICENSE.md
+!soundlib/FREESOUND-SAMPLES-LICENSE.md
+!soundlib/catalog*.json
+!soundlib/freesound-remote.example-pack.json
+# Bundled demo packs (WAV + pack.json)
+!soundlib/demo-pulse/
+!soundlib/demo-pulse/**
+!soundlib/demo-echo/
+!soundlib/demo-echo/**
+
+# Freesound / Novation downloads — never commit (use build_freesound_pack.py or download_soundlib.py)
+soundlib/freesound-loops/
+soundlib/freesound-remote/

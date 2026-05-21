@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Session Pad Grid</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --lp-grid-scale: 1.2;
+      --lp-grid-gap: calc(6px * var(--lp-grid-scale));
+      --lp-pad-row-label: calc(28px * var(--lp-grid-scale));
+      --lp-pad-cell-min: calc(52px * var(--lp-grid-scale));
+      --lp-side-col: calc(34px * var(--lp-grid-scale));
+      --lp-grid-max-width: calc(600px * var(--lp-grid-scale));
+      --lp-pad-cols: var(--lp-pad-row-label) repeat(8, minmax(var(--lp-pad-cell-min), 1fr)) var(--lp-side-col);
+      --bg: #0f1115;
+      --panel: #181c24;
+      --accent: #6ae8ff;
+      --pad: #252b38;
+      --pad-on: #3d4a66;
+      /* Clip grid = same palette velocities as hardware (`LP_SESSION_PALETTE` in app.js).
+         Colours from Novation RGB LUT (BGR triple → #RRGGBB), tttapa Control-Surface. */
+      --pad-armed: #8e6300;
+      --pad-armed-border: #c49540;
+      /* Queued bar/beat stop while still playing — LUT velocity 60 */
+      --pad-pending-stop: #ff3300;
+      --pad-pending-stop-border: #ff6a4d;
+      --pad-playing: #fdfa00;
+      --pad-playing-border: #fff59a;
+      --pad-idle-odd: #00b7ff;
+      --pad-idle-odd-border: #4dd5ff;
+      --pad-idle-even: #00f800;
+      --pad-idle-even-border: #2ee62e;
+      /* Row G: full strip red (mute); clock tick pad uses --pad-strip-g-tick (purple, LP palette 48). */
+      --pad-strip-g: #d01010;
+      --pad-strip-g-border: #ff5050;
+      --pad-strip-g-text: #ffffff;
+      --pad-strip-g-tick: #9766ff;
+      --pad-strip-g-tick-border: #c4a8ff;
+      --pad-strip-g-tick-text: #1a0f28;
+      --pad-strip-h: #e8ecf2;
+      --pad-strip-h-border: #9aa6bc;
+      --pad-strip-h-text: #1a1f2a;
+      /* 8G / 8H: column 8 momentary — mute/stop not used; teal (not blue/green/yellow/orange/red/purple/grey strip) */
+      --pad-strip-col8: #0c7f85;
+      --pad-strip-col8-border: #3ecfdb;
+      --pad-strip-col8-text: #041518;
+      --text: #e8ecf1;
+      --muted: #8b95a8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #2a3140;
+      background: var(--panel);
+    }
+    h1 { font-size: 1.1rem; font-weight: 600; margin: 0; }
+    main { padding: 1rem 1.25rem 1.5rem; max-width: 960px; margin: 0 auto; }
+    .app-guide {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 1.25rem 1.25rem 2.5rem;
+      border-top: 1px solid #2a3140;
+      background: var(--panel);
+    }
+    .app-guide > h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0 0 1rem;
+      color: var(--text);
+    }
+    .app-guide section {
+      margin-bottom: 1.15rem;
+      padding-bottom: 1.15rem;
+      border-bottom: 1px solid #252b38;
+    }
+    .app-guide section:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .app-guide h3 {
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin: 0 0 0.45rem;
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+    .app-guide p,
+    .app-guide ul {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin: 0 0 0.45rem;
+      line-height: 1.55;
+      max-width: 52rem;
+    }
+    .app-guide ul {
+      padding-left: 1.15rem;
+      margin-bottom: 0;
+    }
+    .app-guide li { margin-bottom: 0.3rem; }
+    .app-guide li:last-child { margin-bottom: 0; }
+    .app-guide a { color: var(--accent); }
+    .app-guide code { font-size: 0.88em; }
+    .advanced-options {
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid #2a3140;
+      max-width: var(--lp-grid-max-width);
+    }
+    .advanced-options-heading {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0 0 0.65rem;
+    }
+    .advanced-options-row label {
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+    .advanced-options-row select {
+      width: 100%;
+      max-width: 28rem;
+    }
+    .advanced-options-check {
+      margin-top: 0.85rem;
+      max-width: 28rem;
+    }
+    .advanced-options-check label {
+      display: flex;
+      gap: 0.55rem;
+      align-items: flex-start;
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .advanced-options-check input {
+      margin-top: 0.2rem;
+      flex-shrink: 0;
+    }
+    .advanced-options-actions {
+      margin-top: 0.75rem;
+    }
+    .grid-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+      align-items: flex-end;
+      max-width: var(--lp-grid-max-width);
+      margin: 0.75rem 0 0.5rem;
+    }
+    .grid-toolbar > .grid-toolbar-item {
+      flex: 1 1 10rem;
+      min-width: 10rem;
+    }
+    .grid-toolbar-pair {
+      display: flex;
+      flex: 2 1 22rem;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+      align-items: flex-end;
+      min-width: 0;
+    }
+    .grid-toolbar-pair > div {
+      flex: 1 1 10rem;
+      min-width: 10rem;
+    }
+    .grid-toolbar select {
+      width: 100%;
+      margin-top: 0.35rem;
+    }
+    .grid-toolbar-item.grid-toolbar-asset-source {
+      flex: 1 1 100%;
+      min-width: min(100%, 28rem);
+    }
+    .grid-toolbar-remote {
+      margin-top: 0.55rem;
+    }
+    .grid-toolbar-remote[hidden] {
+      display: none !important;
+    }
+    .grid-toolbar-pair.grid-toolbar-dimmed {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+    .grid-toolbar-remote label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .grid-toolbar-remote-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.35rem;
+      align-items: stretch;
+    }
+    .grid-toolbar-remote-row input {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: 0.4rem 0.55rem;
+      border-radius: 6px;
+      border: 1px solid #3a4458;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 0.8rem;
+    }
+    .grid-toolbar-remote-row button {
+      flex: 0 0 auto;
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      border: 1px solid #3a4458;
+      background: #2c3445;
+      color: var(--text);
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .grid-toolbar-remote-row button:hover {
+      background: #3a4458;
+    }
+    .grid-toolbar-remote-row button:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+    .grid-toolbar-remote-row input.pack-remote-url--ok {
+      border-color: #5ecf8a;
+      box-shadow: 0 0 0 1px rgba(94, 207, 138, 0.3);
+    }
+    .grid-toolbar-remote-row input.pack-remote-url--error {
+      border-color: #e07070;
+      box-shadow: 0 0 0 1px rgba(224, 112, 112, 0.25);
+    }
+    .pack-remote-status {
+      display: block;
+      font-size: 0.78rem;
+      margin: 0.45rem 0 0;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .pack-remote-status[hidden] {
+      display: none !important;
+    }
+    .pack-remote-status--loading {
+      color: #e8c96a;
+      background: rgba(232, 201, 106, 0.12);
+      border: 1px solid rgba(232, 201, 106, 0.35);
+    }
+    .pack-remote-status--ok {
+      color: #7dffb3;
+      background: rgba(125, 255, 179, 0.1);
+      border: 1px solid rgba(125, 255, 179, 0.35);
+      animation: pack-remote-ok-pulse 0.55s ease-out;
+    }
+    .pack-remote-status--error {
+      color: #ff9e9e;
+      background: rgba(255, 158, 158, 0.1);
+      border: 1px solid rgba(255, 158, 158, 0.35);
+    }
+    @keyframes pack-remote-ok-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(125, 255, 179, 0.45); }
+      100% { box-shadow: 0 0 0 6px rgba(125, 255, 179, 0); }
+    }
+    .midi-controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1rem;
+      align-items: flex-end;
+      margin-bottom: 1rem;
+      max-width: 560px;
+    }
+    .midi-controls-row .midi-controls-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .midi-controls-row .midi-controls-input {
+      flex: 1 1 14rem;
+      min-width: 12rem;
+    }
+    .midi-controls-row .midi-controls-input select {
+      width: 100%;
+      margin-top: 0.35rem;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-bottom: 1rem; }
+    label { font-size: 0.8rem; color: var(--muted); }
+    select, button {
+      font: inherit;
+      border-radius: 8px;
+      border: 1px solid #3a4458;
+      background: #222833;
+      color: var(--text);
+      padding: 0.45rem 0.75rem;
+    }
+    select:focus, button:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+    button.primary {
+      background: linear-gradient(145deg, #2a3848, #1e2633);
+      border-color: #4d5f78;
+    }
+    #midi-status { font-size: 0.85rem; color: var(--muted); margin: 0.85rem 0 0; line-height: 1.45; }
+    #midi-status.ok { color: #7dffb3; }
+    .midi-debug {
+      font-size: 0.75rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: #c5cdd9;
+      margin: 0.85rem 0 0;
+      max-width: 28rem;
+      word-break: break-word;
+      line-height: 1.45;
+      padding: 0.5rem 0.65rem;
+      border-radius: 8px;
+      border: 1px solid #3a4458;
+      background: #12151c;
+      min-height: 2.75rem;
+    }
+    #grid-wrap {
+      margin-top: 0.5rem;
+      overflow-x: auto;
+    }
+    #pad-grid {
+      display: grid;
+      grid-template-columns: var(--lp-pad-cols);
+      gap: var(--lp-grid-gap);
+      max-width: var(--lp-grid-max-width);
+      align-items: stretch;
+    }
+    .grid-row-label {
+      font-size: 0.65rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .pad {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      border: 1px solid #333b4d;
+      background: var(--pad);
+      font-size: 0.62rem;
+      color: #b8c0d4;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2px;
+      user-select: none;
+    }
+    button.pad[data-loop-id] {
+      position: relative;
+      padding-top: 7px;
+    }
+    button.pad[data-loop-id] .pan-bar {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 4px;
+      display: flex;
+      flex-direction: row;
+      border-radius: 2px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.45);
+      pointer-events: none;
+      z-index: 1;
+    }
+    button.pad[data-loop-id] .pan-bar-l {
+      flex: 4;
+      min-width: 0;
+      height: 100%;
+      background: #2563eb;
+    }
+    button.pad[data-loop-id] .pan-bar-r {
+      flex: 4;
+      min-width: 0;
+      height: 100%;
+      background: #f59e0b;
+    }
+    button.pad[data-loop-id] .tp-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      margin-top: 2px;
+      max-width: 100%;
+      pointer-events: none;
+    }
+    button.pad[data-loop-id] .tp-row .tp {
+      margin-top: 0;
+      flex: 0 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    button.pad[data-loop-id] .ch-lvl {
+      flex: 0 0 auto;
+      padding: 0 2px;
+      border-radius: 2px;
+      font-size: 0.44rem;
+      font-weight: 800;
+      line-height: 1.15;
+      text-transform: lowercase;
+      background: rgba(0, 0, 0, 0.45);
+      color: #93c5fd;
+    }
+    button.pad[data-loop-id][data-audio-channels="stereo"] .ch-lvl {
+      color: #93c5fd;
+    }
+    button.pad[data-loop-id][data-audio-channels="mono"] .ch-lvl {
+      color: #a8b4c8;
+    }
+    button.pad[data-loop-id] .vol-lvl {
+      position: absolute;
+      left: 2px;
+      bottom: 2px;
+      padding: 2px 3px;
+      border-radius: 3px;
+      font-size: 0.44rem;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      background: rgba(0, 0, 0, 0.72);
+      color: #fbbf24;
+      text-shadow: 0 0 1px #000, 0 1px 1px rgba(0, 0, 0, 0.85);
+      pointer-events: none;
+      z-index: 1;
+    }
+    button.pad[data-loop-id].active .vol-lvl,
+    button.pad[data-loop-id].active.column-muted-playback .vol-lvl,
+    button.pad[data-loop-id].active.pending-off .vol-lvl,
+    button.pad[data-loop-id].armed:not(.active) .vol-lvl,
+    button.pad[data-loop-id][data-session-col-parity="odd"]:not(.active):not(.armed):not(.pending-off) .vol-lvl,
+    button.pad[data-loop-id][data-session-col-parity="even"]:not(.active):not(.armed):not(.pending-off) .vol-lvl {
+      background: rgba(0, 0, 0, 0.72);
+      color: #fbbf24;
+    }
+    .pad:not(.active):not(.armed):not([data-session-col-parity]):not([data-utility-row]):hover {
+      background: #2c3445;
+    }
+    .pad[data-session-col-parity="odd"]:not(.active):not(.armed):not(.pending-off):hover {
+      background: #33d9ff;
+    }
+    .pad[data-session-col-parity="even"]:not(.active):not(.armed):not(.pending-off):hover {
+      background: #4dff4d;
+    }
+    /* Playing loop (yellow, like Arcade) */
+    .pad.active {
+      background: var(--pad-playing);
+      border-color: var(--pad-playing-border);
+      box-shadow: inset 0 0 0 1px rgba(200, 170, 0, 0.45);
+      color: #1a1608;
+    }
+    .pad.active .tp,
+    .pad.active .kd { color: rgba(26, 22, 8, 0.72); }
+    /* Playing in a column muted on row **G** — white (audio ducked, still “playing” on grid). */
+    .pad.active.column-muted-playback {
+      background: #ffffff !important;
+      border-color: #d1d5db !important;
+      box-shadow: inset 0 0 0 1px rgba(209, 213, 219, 0.85);
+      color: #1f2937;
+    }
+    .pad.active.column-muted-playback .nm,
+    .pad.active.column-muted-playback .tp,
+    .pad.active.column-muted-playback .kd {
+      color: #374151 !important;
+    }
+    /* Playing but stop scheduled on next bar/beat — red (matches LP palette 60, not armed orange). */
+    .pad.active.pending-off {
+      background: var(--pad-pending-stop);
+      border-color: var(--pad-pending-stop-border);
+      box-shadow: inset 0 0 0 1px rgba(90, 20, 10, 0.4);
+      color: #fff8f5;
+      outline: 2px dashed rgba(255, 210, 200, 0.95);
+      outline-offset: 1px;
+    }
+    .pad.active.pending-off .tp,
+    .pad.active.pending-off .kd {
+      color: rgba(255, 248, 245, 0.88);
+    }
+    /* Armed / waiting for next bar or beat (orange) */
+    .pad.armed:not(.active) {
+      background: var(--pad-armed);
+      border-color: var(--pad-armed-border);
+      box-shadow: inset 0 0 0 1px rgba(255, 200, 120, 0.22);
+      color: #fff8f0;
+    }
+    .pad.armed:not(.active) .tp,
+    .pad.armed:not(.active) .kd { color: rgba(255, 248, 240, 0.8); }
+    .pad.pending-off {
+      outline: 2px dashed #d48832;
+      outline-offset: 1px;
+    }
+    .pad[data-loop-id][data-session-col-parity="odd"]:not(.active):not(.armed):not(.pending-off) {
+      background: var(--pad-idle-odd);
+      border-color: var(--pad-idle-odd-border);
+      color: #031a24;
+    }
+    .pad[data-loop-id][data-session-col-parity="odd"]:not(.active):not(.armed):not(.pending-off) .tp,
+    .pad[data-loop-id][data-session-col-parity="odd"]:not(.active):not(.armed):not(.pending-off) .kd {
+      color: rgba(3, 26, 36, 0.72);
+    }
+    .pad[data-loop-id][data-session-col-parity="even"]:not(.active):not(.armed):not(.pending-off) {
+      background: var(--pad-idle-even);
+      border-color: var(--pad-idle-even-border);
+      color: #052b08;
+    }
+    .pad[data-loop-id][data-session-col-parity="even"]:not(.active):not(.armed):not(.pending-off) .tp,
+    .pad[data-loop-id][data-session-col-parity="even"]:not(.active):not(.armed):not(.pending-off) .kd {
+      color: rgba(5, 43, 8, 0.72);
+    }
+    .pad.slot-empty[data-session-col-parity="odd"] {
+      background: rgba(0, 183, 255, 0.35);
+      border-color: rgba(77, 213, 255, 0.55);
+    }
+    .pad.slot-empty[data-session-col-parity="even"] {
+      background: rgba(0, 248, 0, 0.28);
+      border-color: rgba(46, 230, 46, 0.55);
+    }
+    /* Clip kind / type legend — pad fill from JS (!important); same palette as Launchpad. */
+    #pad-grid.clip-legend-active button.pad[data-loop-id].clip-legend-swatch.active,
+    #pad-grid.clip-legend-active button.pad[data-loop-id].clip-legend-swatch.armed,
+    #pad-grid.clip-legend-active button.pad[data-loop-id].clip-legend-swatch.pending-off,
+    #pad-grid.clip-legend-active button.pad[data-loop-id].clip-legend-swatch.column-muted-playback {
+      outline: none;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.22);
+    }
+    #pad-grid.clip-legend-active button.pad[data-loop-id].clip-legend-swatch .nm {
+      color: rgba(10, 12, 18, 0.92) !important;
+      text-shadow: 0 0 1px rgba(255, 255, 255, 0.35);
+    }
+    #pad-grid.clip-legend-active button.pad[data-loop-id].clip-legend-swatch .kd,
+    #pad-grid.clip-legend-active button.pad[data-loop-id].clip-legend-swatch .tp {
+      color: rgba(10, 12, 18, 0.68) !important;
+    }
+    .pad.utility {
+      cursor: pointer;
+      background: #1a1e28;
+      border-style: dashed;
+      opacity: 0.75;
+    }
+    .pad.utility[data-utility-row="6"],
+    .pad.utility[data-utility-row="7"] {
+      aspect-ratio: 1;
+      min-height: 0;
+      min-width: 0;
+    }
+    .pad.utility[data-utility-row="6"] {
+      opacity: 1;
+      border-style: solid;
+      background: var(--pad-strip-g);
+      border-color: var(--pad-strip-g-border);
+      color: var(--pad-strip-g-text);
+    }
+    .pad.utility[data-utility-row="6"]:hover {
+      background: #e82020;
+      border-color: #ff7070;
+    }
+    .pad.utility[data-utility-row="6"] .nm {
+      color: var(--pad-strip-g-text);
+      font-size: 0.52rem;
+      line-height: 1.05;
+      max-height: 2.4em;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      word-break: break-word;
+    }
+    .pad.utility[data-utility-row="6"].sync-clock-tick {
+      background: var(--pad-strip-g-tick) !important;
+      border-color: var(--pad-strip-g-tick-border) !important;
+      color: var(--pad-strip-g-tick-text) !important;
+    }
+    .pad.utility[data-utility-row="6"].sync-clock-tick .nm {
+      color: var(--pad-strip-g-tick-text) !important;
+    }
+    .pad.utility[data-utility-row="6"].sync-clock-tick:hover {
+      background: #b894ff !important;
+      border-color: #e8d8ff !important;
+    }
+    /* **H1**…**H7** held: matching **G** shows **stop col** on white. */
+    .pad.utility[data-utility-row="6"].g-stop-col-active {
+      background: #ffffff !important;
+      border-color: #d1d5db !important;
+      color: #1f2937 !important;
+    }
+    .pad.utility[data-utility-row="6"].g-stop-col-active .nm {
+      color: #1f2937 !important;
+    }
+    .pad.utility[data-utility-row="6"].g-stop-col-active:hover {
+      background: #f3f4f6 !important;
+      border-color: #9ca3af !important;
+    }
+    .pad.utility[data-utility-row="6"].g-stop-col-active.sync-clock-tick {
+      background: #ffffff !important;
+      border-color: #d1d5db !important;
+      color: #1f2937 !important;
+    }
+    .pad.utility[data-utility-row="6"].g-stop-col-active.sync-clock-tick .nm {
+      color: #1f2937 !important;
+    }
+    .pad.utility[data-utility-row="7"] {
+      opacity: 1;
+      border-style: solid;
+      background: var(--pad-strip-h);
+      border-color: var(--pad-strip-h-border);
+      color: var(--pad-strip-h-text);
+    }
+    .pad.utility[data-utility-row="7"]:hover {
+      background: #f2f4fa;
+      border-color: #8c9ab8;
+    }
+    .pad.utility[data-utility-row="7"].h-stop-modifier-held {
+      background: #422006 !important;
+      border-color: #ea580c !important;
+      color: #ffedd5 !important;
+    }
+    .pad.utility[data-utility-row="7"].h-stop-modifier-held .nm {
+      color: #ffedd5 !important;
+    }
+    .pad.utility[data-utility-row="7"] .nm {
+      color: var(--pad-strip-h-text);
+      font-size: 0.52rem;
+      line-height: 1.05;
+      max-height: 2.4em;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      word-break: break-word;
+    }
+    .pad.utility[data-strip-col8-inert="true"] {
+      pointer-events: none;
+      cursor: default;
+      opacity: 1;
+      border-style: solid;
+      background: var(--pad-strip-col8);
+      border-color: var(--pad-strip-col8-border);
+      color: var(--pad-strip-col8-text);
+    }
+    .pad.utility[data-strip-col8-inert="true"] .nm {
+      color: var(--pad-strip-col8-text);
+      opacity: 0.9;
+      font-size: 0.68rem;
+    }
+    .pad.utility[data-h8-clock-menu-strip="true"] {
+      opacity: 1;
+      border-style: solid;
+      background: var(--pad-strip-col8);
+      border-color: var(--pad-strip-col8-border);
+      color: var(--pad-strip-col8-text);
+      cursor: pointer;
+    }
+    .pad.utility[data-h8-clock-menu-strip="true"]:hover {
+      filter: brightness(1.12);
+    }
+    .pad.utility[data-h8-clock-menu-strip="true"] .nm {
+      color: var(--pad-strip-col8-text);
+      font-weight: 700;
+      font-size: 0.58rem;
+      line-height: 1.15;
+    }
+    .pad.utility[data-g8-volume-hold-strip="true"] {
+      opacity: 1;
+      border-style: solid;
+      background: var(--pad-strip-col8);
+      border-color: var(--pad-strip-col8-border);
+      color: var(--pad-strip-col8-text);
+      cursor: pointer;
+    }
+    .pad.utility[data-g8-volume-hold-strip="true"]:hover {
+      filter: brightness(1.12);
+    }
+    #pad-grid.g7-volume-menu-active .pad.utility[data-g8-volume-hold-strip="true"],
+    .pad.utility[data-g8-volume-hold-strip="true"].g8-volume-menu-held,
+    #pad-grid.h8-clock-menu-active .pad.utility[data-h8-clock-menu-strip="true"],
+    .pad.utility[data-h8-clock-menu-strip="true"].h8-clock-menu-held {
+      filter: brightness(1.18);
+      box-shadow: 0 0 0 2px #a855f7, inset 0 0 0 1px rgba(168, 85, 247, 0.35);
+    }
+    .pad.utility[data-g8-volume-hold-strip="true"] .nm {
+      color: var(--pad-strip-col8-text);
+      font-weight: 700;
+      font-size: 0.58rem;
+      line-height: 1.15;
+    }
+    #pad-grid.h8-clock-menu-active button.pad[data-h8-clock-tick-row].h8-clock-menu-dim:not(.h8-clock-menu-selected) {
+      background: #0a1218 !important;
+      border-color: #1a2838 !important;
+      color: #7a8a9e !important;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+    }
+    #pad-grid.h8-clock-menu-active button.pad[data-h8-clock-tick-row].h8-clock-menu-dim:not(.h8-clock-menu-selected) .nm,
+    #pad-grid.h8-clock-menu-active button.pad[data-h8-clock-tick-row].h8-clock-menu-dim:not(.h8-clock-menu-selected) .kd,
+    #pad-grid.h8-clock-menu-active button.pad[data-h8-clock-tick-row].h8-clock-menu-dim:not(.h8-clock-menu-selected) .tp {
+      color: #7a8a9e !important;
+    }
+    #pad-grid.h8-clock-menu-active button.pad[data-h8-clock-tick-row].h8-clock-menu-selected {
+      background: #0b2d5c !important;
+      border-color: #2563eb !important;
+      color: #dbeafe !important;
+      box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.45);
+    }
+    #pad-grid.h8-clock-menu-active button.pad[data-h8-clock-tick-row].h8-clock-menu-selected .nm,
+    #pad-grid.h8-clock-menu-active button.pad[data-h8-clock-tick-row].h8-clock-menu-selected .kd,
+    #pad-grid.h8-clock-menu-active button.pad[data-h8-clock-tick-row].h8-clock-menu-selected .tp {
+      color: rgba(219, 234, 254, 0.92) !important;
+    }
+    button.pad.side-panel[data-side-panel-kind="true"],
+    button.pad.side-panel[data-side-panel-type="true"],
+    button.pad.side-panel[data-side-panel-stereo="true"] {
+      cursor: pointer;
+    }
+    button.pad.side-panel.side-panel-kind-idle {
+      background: var(--pad-idle-odd) !important;
+      border-color: var(--pad-idle-odd-border) !important;
+      color: #041018 !important;
+    }
+    button.pad.side-panel.side-panel-kind-idle .nm {
+      color: #041018 !important;
+      font-weight: 700;
+      font-size: 0.52rem;
+    }
+    button.pad.side-panel.side-panel-type-idle {
+      background: var(--pad-idle-even) !important;
+      border-color: var(--pad-idle-even-border) !important;
+      color: #041008 !important;
+    }
+    button.pad.side-panel.side-panel-type-idle .nm {
+      color: #041008 !important;
+      font-weight: 700;
+      font-size: 0.52rem;
+    }
+    button.pad.side-panel.side-panel-stereo-idle {
+      background: var(--pad-armed) !important;
+      border-color: var(--pad-armed-border) !important;
+      color: #fff8f0 !important;
+    }
+    button.pad.side-panel.side-panel-stereo-idle .nm {
+      color: #fff8f0 !important;
+      font-weight: 700;
+      font-size: 0.52rem;
+    }
+    button.pad.side-panel[data-side-panel-kind="true"].clip-kind-legend-held,
+    button.pad.side-panel[data-side-panel-type="true"].clip-type-legend-held {
+      filter: brightness(1.12);
+      box-shadow: 0 0 0 2px #fbbf24;
+    }
+    button.pad.side-panel[data-side-panel-stereo="true"].g6-stereo-menu-held {
+      filter: brightness(1.12);
+      box-shadow: 0 0 0 2px #a855f7;
+    }
+    button.pad.side-panel.side-panel-inert {
+      opacity: 0.2;
+      pointer-events: none;
+    }
+    .row-labels .side-hdr {
+      font-size: 0.55rem;
+      color: var(--muted);
+    }
+    /* Hold right-column **pan** (row C): purple clip selection; row **G** = L…, row **H** = R… (L+R=8). */
+    #pad-grid.g6-stereo-menu-active button.pad[data-loop-id].g6-clip-selected,
+    #pad-grid.g6-stereo-menu-active button.pad[data-loop-id].g6-clip-pan-match {
+      outline: 3px solid #a855f7;
+      outline-offset: 1px;
+      box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.45), inset 0 0 0 1px rgba(168, 85, 247, 0.2);
+    }
+    /* Pan menu: G = LP vel 41 blue, H = LP vel 62 orange (1G–8G, 1H–8H; 8G/8H = L8/R8). */
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-utility-row="6"],
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-g8-volume-hold-strip="true"].g8-pan-step-strip {
+      background: #084878 !important;
+      border-color: #052a47 !important;
+      color: #d8ecff !important;
+    }
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-utility-row="6"] .nm,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-g8-volume-hold-strip="true"].g8-pan-step-strip .nm {
+      color: #d8ecff !important;
+    }
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-utility-row="7"],
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-pan-step-strip {
+      background: #e88810 !important;
+      border-color: #9a5508 !important;
+      color: #1a1004 !important;
+    }
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-utility-row="7"] .nm,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-pan-step-strip .nm {
+      color: #1a1004 !important;
+    }
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-utility-row="7"].g6-h-strip-step-apply,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-utility-row="6"].g6-g-strip-step-apply,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-g8-volume-hold-strip="true"].g8-pan-step-strip.g6-g-strip-step-apply,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-pan-step-strip.g6-h-strip-step-apply {
+      background: var(--pad-playing) !important;
+      border-color: var(--pad-playing-border) !important;
+      color: #1a1608 !important;
+    }
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-utility-row="7"].g6-h-strip-step-apply .nm,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-utility-row="6"].g6-g-strip-step-apply .nm,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-g8-volume-hold-strip="true"].g8-pan-step-strip.g6-g-strip-step-apply .nm,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-pan-step-strip.g6-h-strip-step-apply .nm {
+      color: #1a1608 !important;
+    }
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-utility-row="7"].g6-h-strip-step-query,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-utility-row="6"].g6-g-strip-step-query,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-g8-volume-hold-strip="true"].g8-pan-step-strip.g6-g-strip-step-query,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-pan-step-strip.g6-h-strip-step-query {
+      background: #4c1d7a !important;
+      border-color: #9333ea !important;
+      color: #f5e9ff !important;
+    }
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-utility-row="6"].g6-g-strip-step-current,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-utility-row="7"].g6-h-strip-step-current,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-g8-volume-hold-strip="true"].g8-pan-step-strip.g6-g-strip-step-current,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-pan-step-strip.g6-h-strip-step-current {
+      background: #ffffff !important;
+      border-color: #d1d5db !important;
+      color: #1f2937 !important;
+    }
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-utility-row="6"].g6-g-strip-step-current .nm,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-utility-row="7"].g6-h-strip-step-current .nm,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-g8-volume-hold-strip="true"].g8-pan-step-strip.g6-g-strip-step-current .nm,
+    #pad-grid.g6-stereo-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-pan-step-strip.g6-h-strip-step-current .nm {
+      color: #1f2937 !important;
+    }
+    /* Volume menu (8G): clip grid keeps normal colours; purple = selected / volume-query match; row **H** dark with n/8. */
+    #pad-grid.g7-volume-menu-active button.pad[data-loop-id].g7-clip-selected,
+    #pad-grid.g7-volume-menu-active button.pad[data-loop-id].g7-clip-volume-match {
+      outline: 3px solid #a855f7;
+      outline-offset: 1px;
+      box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.45), inset 0 0 0 1px rgba(168, 85, 247, 0.2);
+    }
+    #pad-grid.g7-volume-menu-active .pad.utility[data-utility-row="7"],
+    #pad-grid.g7-volume-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-volume-step-strip {
+      background: #12151c !important;
+      border-color: #252b38 !important;
+      color: #8b95a8 !important;
+    }
+    #pad-grid.g7-volume-menu-active .pad.utility[data-utility-row="7"]:hover,
+    #pad-grid.g7-volume-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-volume-step-strip:hover {
+      background: #181c24 !important;
+      border-color: #3a4458 !important;
+    }
+    #pad-grid.g7-volume-menu-active .pad.utility[data-utility-row="7"] .nm,
+    #pad-grid.g7-volume-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-volume-step-strip .nm {
+      color: #c5cdd9 !important;
+    }
+    #pad-grid.g7-volume-menu-active .pad.utility[data-utility-row="7"].g7-h-strip-step-apply,
+    #pad-grid.g7-volume-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-volume-step-strip.g7-h-strip-step-apply {
+      background: var(--pad-playing) !important;
+      border-color: var(--pad-playing-border) !important;
+      color: #1a1608 !important;
+    }
+    #pad-grid.g7-volume-menu-active .pad.utility[data-utility-row="7"].g7-h-strip-step-apply .nm,
+    #pad-grid.g7-volume-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-volume-step-strip.g7-h-strip-step-apply .nm {
+      color: #1a1608 !important;
+    }
+    #pad-grid.g7-volume-menu-active .pad.utility[data-utility-row="7"].g7-h-strip-step-query,
+    #pad-grid.g7-volume-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-volume-step-strip.g7-h-strip-step-query {
+      background: #4c1d7a !important;
+      border-color: #9333ea !important;
+      color: #f5e9ff !important;
+    }
+    #pad-grid.g7-volume-menu-active .pad.utility[data-utility-row="7"].g7-h-strip-step-query .nm,
+    #pad-grid.g7-volume-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-volume-step-strip.g7-h-strip-step-query .nm {
+      color: #f5e9ff !important;
+    }
+    #pad-grid.g7-volume-menu-active .pad.utility[data-utility-row="7"].g7-h-strip-step-current,
+    #pad-grid.g7-volume-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-volume-step-strip.g7-h-strip-step-current {
+      background: #0b2d5c !important;
+      border-color: #2563eb !important;
+      color: #dbeafe !important;
+    }
+    #pad-grid.g7-volume-menu-active .pad.utility[data-utility-row="7"].g7-h-strip-step-current .nm,
+    #pad-grid.g7-volume-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-volume-step-strip.g7-h-strip-step-current .nm {
+      color: #dbeafe !important;
+    }
+    /* Idle row **H** (light strip) when neither volume nor pan menu is active. */
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active) .pad.utility[data-utility-row="7"]:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) {
+      background: var(--pad-strip-h) !important;
+      border-color: var(--pad-strip-h-border) !important;
+      color: var(--pad-strip-h-text) !important;
+    }
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active) .pad.utility[data-utility-row="7"]:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) .nm {
+      color: var(--pad-strip-h-text) !important;
+    }
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active) .pad.utility[data-utility-row="7"]:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]):hover {
+      background: #f2f4fa !important;
+      border-color: #8c9ab8 !important;
+    }
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active) .pad.utility[data-utility-row="7"].h-stop-modifier-held:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) {
+      background: #422006 !important;
+      border-color: #ea580c !important;
+      color: #ffedd5 !important;
+    }
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active) .pad.utility[data-utility-row="7"].h-stop-modifier-held:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) .nm {
+      color: #ffedd5 !important;
+    }
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active) .pad.utility[data-utility-row="7"].h-stop-modifier-held:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]):hover {
+      background: #7c2d12 !important;
+      border-color: #f97316 !important;
+    }
+    .pad.utility .nm { font-size: 0.52rem; opacity: 0.9; }
+    .pad .nm { font-weight: 600; font-size: 0.58rem; line-height: 1.1; }
+    .pad .kd {
+      font-size: 0.48rem;
+      line-height: 1.05;
+      opacity: 0.88;
+      margin-top: 1px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--muted);
+    }
+    .pad .tp { font-size: 0.52rem; opacity: 0.75; }
+    .pad.slot-empty {
+      border-radius: 6px;
+      border: 1px dashed #2a3140;
+      background: #141820;
+      opacity: 0.45;
+      min-height: 0;
+      pointer-events: none;
+    }
+    .row-labels {
+      display: grid;
+      grid-template-columns: var(--lp-pad-cols);
+      gap: var(--lp-grid-gap);
+      max-width: var(--lp-grid-max-width);
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .row-labels span { text-align: center; }
+    .row-labels .corner:not(.pack-scroll-nav) { visibility: hidden; }
+    .row-labels .corner.pack-scroll-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      justify-content: center;
+      align-items: stretch;
+    }
+    .pack-scroll-btn {
+      font-size: 0.58rem;
+      line-height: 1;
+      padding: 0.15rem 0.2rem;
+      border-radius: 4px;
+      border: 1px solid #4d5f78;
+      background: #252b38;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .pack-scroll-btn:hover:not(:disabled) {
+      background: #3d4a66;
+      border-color: #6ae8ff;
+    }
+    .pack-scroll-btn:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Session Pad Grid</h1>
+  </header>
+  <main>
+    <div class="midi-controls-row">
+      <div class="midi-controls-buttons">
+        <button type="button" class="primary" id="btn-audio">Enable audio</button>
+        <button type="button" id="btn-midi">Connect MIDI</button>
+      </div>
+      <div class="midi-controls-input">
+        <label for="midi-input">MIDI input</label>
+        <select id="midi-input" disabled>
+          <option value="">— connect MIDI first —</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-toolbar" aria-label="Grid options">
+      <div class="grid-toolbar-item grid-toolbar-asset-source">
+        <label for="asset-source">Asset source</label>
+        <select
+          id="asset-source"
+          title="1) Local soundlib. 2) Novation proxy (local server.py only). 3) Custom URL — paste pack.json or catalog.json and click Load."
+        ></select>
+        <div id="asset-source-remote-panel" class="grid-toolbar-remote" hidden>
+          <label for="pack-remote-url">pack.json URL or path</label>
+        <div class="grid-toolbar-remote-row">
+          <input
+            type="text"
+            id="pack-remote-url"
+            placeholder="https://…/catalog.json or …/my-pack/pack.json"
+            spellcheck="false"
+            autocomplete="off"
+            title="http(s) pack.json, catalog.json ({ packs: [ { slug, title, pack } ] }), or file path under soundlib/ (rewritten on local http). Catalog enables Sample set switching. ftp:// not supported."
+          />
+          <button type="button" id="btn-load-remote-pack">Load</button>
+        </div>
+        <p
+          id="pack-remote-status"
+          class="pack-remote-status"
+          role="status"
+          aria-live="polite"
+          hidden
+        ></p>
+        </div>
+      </div>
+      <div class="grid-toolbar-pair" id="grid-toolbar-sample-set">
+        <div>
+          <label for="pack-select">Sample set</label>
+          <select id="pack-select"></select>
+        </div>
+        <div>
+          <label for="sync-loop-ticks">Clock sync (bar mode)</label>
+          <select
+            id="sync-loop-ticks"
+            title="Purple G-row clock: 8 steps per pattern loop. Stored value = purple ticks between bar-sync snaps (step = loop × ticks ÷ 8). 0 = immediate. Hold H8 on hardware and tap 8A…8F: 8A immediate, 8B = 1 tick, 8C = 2, 8D = 4, 8E = full cycle (8 ticks), 8F = 16 ticks (2 loops). Beat sync unchanged."
+          >
+            <option value="0">Immediate (no sync)</option>
+            <option value="1">1 tick</option>
+            <option value="2">2 ticks</option>
+            <option value="4" selected>4 ticks</option>
+            <option value="8">8 ticks — full cycle</option>
+            <option value="16">16 ticks — two cycles</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="row-labels" id="col-labels" aria-hidden="true"></div>
+    <div id="grid-wrap">
+      <div id="pad-grid"></div>
+    </div>
+
+    <section class="advanced-options" aria-labelledby="advanced-options-heading">
+      <h2 id="advanced-options-heading" class="advanced-options-heading">Advanced options</h2>
+      <div class="advanced-options-row">
+        <label for="pad-layout">Pad / MIDI map</label>
+        <select id="pad-layout">
+          <option value="modern">Modern — Launchpad X · Mini MK3 · Pro MK3 (same map &amp; SysEx family)</option>
+          <option value="classic">Classic — original Launchpad Mini &amp; MK2 (hardware Session)</option>
+        </select>
+      </div>
+      <div class="advanced-options-row">
+        <label for="grid-flip">Session grid vs hardware</label>
+        <select id="grid-flip">
+          <option value="none" selected>No flip</option>
+          <option value="row">Flip clip rows (A↔F)</option>
+          <option value="col">Flip columns (1↔8)</option>
+          <option value="both">Flip rows + columns</option>
+        </select>
+      </div>
+      <div class="advanced-options-check">
+        <label for="midi-sysex-daw">
+          <input type="checkbox" id="midi-sysex-daw" />
+          <span>
+            Send <strong>DAW Session</strong> SysEx to the Launchpad (same two frames as Launchpad Arcade — forces DAW mode on the unit so the browser can drive Session lighting).
+            If the hardware <strong>Session</strong> key stops responding, use <strong>Release DAW mode</strong> (after Connect MIDI) or unplug USB. Leave this <strong>unchecked</strong> if you only use normal standalone Session.
+            Pad MIDI still uses the <strong>MIDI</strong> port + <strong>Modern</strong> map when Session SysEx is off.
+          </span>
+        </label>
+      </div>
+      <div class="advanced-options-actions">
+        <button
+          type="button"
+          id="btn-midi-standalone"
+          disabled
+          title="Sends Novation Standalone SysEx (DAW off)"
+        >
+          Release DAW mode
+        </button>
+      </div>
+      <p id="midi-status">MIDI: not connected · G = mute column · H = hold stop col, then tap clip or G in that column (Session + Modern).</p>
+      <p id="midi-debug" class="midi-debug" hidden>
+        Press a pad after connect — last MIDI message appears here (decoded as <strong>Session</strong> pads only). Clip pads use
+        <strong>Note On</strong> (<code>raw 90 …</code>); <strong>Control Change</strong> (<code>b0 …</code>) is ignored for clips. On
+        <strong>Mini MK3</strong>, the right column (scene launches, logo, stop strip) sends CC on numbers that overlap the Session note map — when
+        known, the grey line names that control. With row/column flip on, <code>pack slot … after flip</code> is the internal channel address; the lit
+        grid cell matches the Session key in the same line.
+      </p>
+    </section>
+  </main>
+
+  <footer class="app-guide" id="app-guide">
+    <h2>Guide</h2>
+
+    <section>
+      <h3>Packs &amp; audio</h3>
+      <p>
+        Uses the same <code>pack.json</code> + sample layout as
+        <a href="https://intro.novationmusic.com/viral-hiphop">Launchpad Arcade</a> (Novation).
+      </p>
+      <ul>
+        <li><strong>Local soundlib</strong> — <code>/soundlib/&lt;slug&gt;/pack.json</code> (slugs in <code>js/config.js</code>).</li>
+        <li><strong>Novation (proxy)</strong> — <code>/novation/</code> via <code>python3 server.py</code> (same-origin, avoids CORS).</li>
+        <li><strong>Custom URL</strong> — one <code>pack.json</code> URL, or a <code>catalog.json</code> manifest (<code>{ "packs": [ { "slug", "title" } ] }</code>) listing many packs; click <strong>Load</strong>. A catalog enables the <strong>Sample set</strong> dropdown for switching. On GitHub Pages:
+          <a href="https://comboshreddies.github.io/session-pad-grid/soundlib/catalog.github-pages.json">catalog.github-pages.json</a>
+          — repo <a href="https://github.com/comboshreddies/session-pad-grid">comboshreddies/session-pad-grid</a>. See <code>README.md</code>.</li>
+        <li>Click <strong>Enable audio</strong> once so Web Audio and bar-sync can run.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h3>Pad names &amp; grid</h3>
+      <ul>
+        <li>Codes are <strong>digit then letter</strong>: <code>1A</code> = column 1, row A (not “A1” on silkscreen).</li>
+        <li>Rows <strong>A–F</strong> = clips; rows <strong>G</strong> / <strong>H</strong> = strip controls (like hardware).</li>
+        <li>Packs with more than six clip rows: grid shows six at a time; on <strong>Mini MK3</strong> use <strong>DAW</strong> input <strong>▲</strong> / <strong>▼</strong> to scroll.</li>
+        <li>Clip rows follow <strong>pack JSON order</strong> (A at top). Use <strong>Flip</strong> (advanced, below grid) if left/right or up/down is mirrored vs your Launchpad.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h3>Row G (mute) &amp; row H (stop)</h3>
+      <ul>
+        <li><strong>G1–G7</strong> — hold to mute column (release unmutes on hardware note off; web uses hold). Playing clips turn <strong>white</strong> while muted.</li>
+        <li><strong>volume</strong> (8G) — hold or click to lock the clip volume menu; row <strong>H</strong> shows <code>1/8</code>…<code>8/8</code> (<strong>8H</strong> = max).</li>
+        <li><strong>Right column row 3</strong> (web row <strong>C</strong>, orange <strong>pan</strong> / Mini MK3 CC <strong>69</strong>) — hold for <strong>stereo pan</strong>: select clips <code>1A</code>…<code>8F</code>; row <strong>G</strong> = left <code>L1</code>…<code>L8</code>, row <strong>H</strong> = right <code>R1</code>…<code>R8</code> (<strong>L+R=8</strong>, e.g. <code>G8</code>→<code>R0</code>, <code>H8</code>→<code>L0</code>, <code>G4</code>→<code>R4</code>).</li>
+        <li><strong>H1–H7</strong> — hold <strong>stop col</strong> (orange): nothing stops until you tap a <strong>clip</strong> in that column or press <strong>G</strong> (<strong>stop col</strong>, white) to stop the whole column.</li>
+        <li><strong>8H</strong> — <code>8/8</code> max volume while the volume menu is active; <strong>R8</strong> while pan is active; otherwise <strong>hold or click to lock</strong> <strong>clock tick sync</strong> and pick ticks with <strong>8A</strong>…<strong>8F</strong>.</li>
+        <li><strong>1G</strong>…<strong>7G</strong> — one <strong>purple</strong> pad moves as a visual bar clock (8 steps per loop).</li>
+      </ul>
+    </section>
+
+    <section>
+      <h3>Clip colours</h3>
+      <ul>
+        <li><strong>Blue / green</strong> — idle (odd / even columns).</li>
+        <li><strong>Orange</strong> — armed (waiting for next bar/beat when <code>syncTo</code> is set).</li>
+        <li><strong>Yellow</strong> — playing; <strong>red</strong> — playing but stop queued on next grid step.</li>
+        <li><strong>Clock sync</strong> menu — purple ticks on row G between bar-sync snaps (<code>0</code> = immediate, then <code>1 / 2 / 4 / 8 / 16</code> ticks).</li>
+      </ul>
+    </section>
+
+    <section>
+      <h3>MIDI &amp; Launchpad mode</h3>
+      <ul>
+        <li>Use <strong>Session</strong> on the unit so pads match <code>1A</code>…<code>8H</code> on this grid.</li>
+        <li><strong>User / Drum / Keys</strong> send different note numbers — highlights and debug text can be wrong (accidental matches). Example: corner as <code>1A</code> in User may decode as <code>1E</code> in Session.</li>
+        <li>Two USB ports are common: <strong>… MIDI</strong> (User/Drum/Keys) vs <strong>… DAW</strong> (Session). Pick the input for the mode you use.</li>
+        <li><strong>Modern</strong> map = Arcade pack layout; <strong>Classic</strong> = older Session note table. DAW inputs are decoded with Classic while the pack map stays Modern.</li>
+        <li>Optional <strong>DAW Session SysEx</strong> — browser drives Session LEDs (like Arcade). If the hardware <strong>Session</strong> key stops working, click <strong>Release DAW mode</strong> or replug USB.</li>
+        <li><strong>Connect MIDI</strong> may ask for SysEx permission when the checkbox is enabled.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h3>MIDI debug line</h3>
+      <p>
+        After connect, the grey line shows the last message as a <strong>Session</strong> pad. Clips use <strong>Note On</strong> (<code>90 …</code>); CC (<code>b0 …</code>) is ignored for clips. Mini MK3 side buttons may send CC on numbers that overlap the note map.
+      </p>
+    </section>
+  </footer>
+
+  <script type="module" src="./app.js?v=20260516demopacks"></script>
+</body>
+</html>

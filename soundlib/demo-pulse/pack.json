@@ -1,0 +1,1733 @@
+{
+  "lights": [],
+  "loops": [
+    {
+      "category": "Drums",
+      "file": "Kick_A1.wav",
+      "gain": "0",
+      "kind": "Kick",
+      "loopId": "0",
+      "loopLength": 16,
+      "name": "Kick A1",
+      "url": "demo-pulse/Drums/loop/Kick/Kick_A1/Kick_A1.wav",
+      "padData": {
+        "channelId": 0,
+        "rowId": 0,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "0",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Drums",
+      "file": "Kick_B1.wav",
+      "gain": "0",
+      "kind": "Kick",
+      "loopId": "1",
+      "loopLength": 16,
+      "name": "Kick B1",
+      "url": "demo-pulse/Drums/loop/Kick/Kick_B1/Kick_B1.wav",
+      "padData": {
+        "channelId": 0,
+        "rowId": 1,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "1",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Drums",
+      "file": "Kick_C1.wav",
+      "gain": "0",
+      "kind": "Kick",
+      "loopId": "2",
+      "loopLength": 16,
+      "name": "Kick C1",
+      "url": "demo-pulse/Drums/loop/Kick/Kick_C1/Kick_C1.wav",
+      "padData": {
+        "channelId": 0,
+        "rowId": 2,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "2",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Drums",
+      "file": "Kick_D1.wav",
+      "gain": "0",
+      "kind": "Kick",
+      "loopId": "3",
+      "loopLength": 16,
+      "name": "Kick D1",
+      "url": "demo-pulse/Drums/loop/Kick/Kick_D1/Kick_D1.wav",
+      "padData": {
+        "channelId": 0,
+        "rowId": 3,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "3",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Drums",
+      "file": "Kick_E1.wav",
+      "gain": "0",
+      "kind": "Kick",
+      "loopId": "4",
+      "loopLength": 16,
+      "name": "Kick E1",
+      "url": "demo-pulse/Drums/loop/Kick/Kick_E1/Kick_E1.wav",
+      "padData": {
+        "channelId": 0,
+        "rowId": 4,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "4",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Drums",
+      "file": "Kick_F1.wav",
+      "gain": "0",
+      "kind": "Kick",
+      "loopId": "5",
+      "loopLength": 16,
+      "name": "Kick F1",
+      "url": "demo-pulse/Drums/loop/Kick/Kick_F1/Kick_F1.wav",
+      "padData": {
+        "channelId": 0,
+        "rowId": 5,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "5",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Drums",
+      "file": "Snare_A2.wav",
+      "gain": "0",
+      "kind": "Snare",
+      "loopId": "6",
+      "loopLength": 16,
+      "name": "Snare A2",
+      "url": "demo-pulse/Drums/loop/Snare/Snare_A2/Snare_A2.wav",
+      "padData": {
+        "channelId": 1,
+        "rowId": 0,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "6",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Drums",
+      "file": "Snare_B2.wav",
+      "gain": "0",
+      "kind": "Snare",
+      "loopId": "7",
+      "loopLength": 16,
+      "name": "Snare B2",
+      "url": "demo-pulse/Drums/loop/Snare/Snare_B2/Snare_B2.wav",
+      "padData": {
+        "channelId": 1,
+        "rowId": 1,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "7",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Drums",
+      "file": "Snare_C2.wav",
+      "gain": "0",
+      "kind": "Snare",
+      "loopId": "8",
+      "loopLength": 16,
+      "name": "Snare C2",
+      "url": "demo-pulse/Drums/loop/Snare/Snare_C2/Snare_C2.wav",
+      "padData": {
+        "channelId": 1,
+        "rowId": 2,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "8",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Drums",
+      "file": "Snare_D2.wav",
+      "gain": "0",
+      "kind": "Snare",
+      "loopId": "9",
+      "loopLength": 16,
+      "name": "Snare D2",
+      "url": "demo-pulse/Drums/loop/Snare/Snare_D2/Snare_D2.wav",
+      "padData": {
+        "channelId": 1,
+        "rowId": 3,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "9",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Drums",
+      "file": "Snare_E2.wav",
+      "gain": "0",
+      "kind": "Snare",
+      "loopId": "10",
+      "loopLength": 16,
+      "name": "Snare E2",
+      "url": "demo-pulse/Drums/loop/Snare/Snare_E2/Snare_E2.wav",
+      "padData": {
+        "channelId": 1,
+        "rowId": 4,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "10",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Drums",
+      "file": "Snare_F2.wav",
+      "gain": "0",
+      "kind": "Snare",
+      "loopId": "11",
+      "loopLength": 16,
+      "name": "Snare F2",
+      "url": "demo-pulse/Drums/loop/Snare/Snare_F2/Snare_F2.wav",
+      "padData": {
+        "channelId": 1,
+        "rowId": 5,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "11",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Bass",
+      "file": "Sub_A3.wav",
+      "gain": "0",
+      "kind": "Sub",
+      "loopId": "12",
+      "loopLength": 16,
+      "name": "Sub A3",
+      "url": "demo-pulse/Bass/loop/Sub/Sub_A3/Sub_A3.wav",
+      "padData": {
+        "channelId": 2,
+        "rowId": 0,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "12",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Bass",
+      "file": "Sub_B3.wav",
+      "gain": "0",
+      "kind": "Sub",
+      "loopId": "13",
+      "loopLength": 16,
+      "name": "Sub B3",
+      "url": "demo-pulse/Bass/loop/Sub/Sub_B3/Sub_B3.wav",
+      "padData": {
+        "channelId": 2,
+        "rowId": 1,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "13",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Bass",
+      "file": "Sub_C3.wav",
+      "gain": "0",
+      "kind": "Sub",
+      "loopId": "14",
+      "loopLength": 16,
+      "name": "Sub C3",
+      "url": "demo-pulse/Bass/loop/Sub/Sub_C3/Sub_C3.wav",
+      "padData": {
+        "channelId": 2,
+        "rowId": 2,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "14",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Bass",
+      "file": "Sub_D3.wav",
+      "gain": "0",
+      "kind": "Sub",
+      "loopId": "15",
+      "loopLength": 16,
+      "name": "Sub D3",
+      "url": "demo-pulse/Bass/loop/Sub/Sub_D3/Sub_D3.wav",
+      "padData": {
+        "channelId": 2,
+        "rowId": 3,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "15",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Bass",
+      "file": "Sub_E3.wav",
+      "gain": "0",
+      "kind": "Sub",
+      "loopId": "16",
+      "loopLength": 16,
+      "name": "Sub E3",
+      "url": "demo-pulse/Bass/loop/Sub/Sub_E3/Sub_E3.wav",
+      "padData": {
+        "channelId": 2,
+        "rowId": 4,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "16",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Bass",
+      "file": "Sub_F3.wav",
+      "gain": "0",
+      "kind": "Sub",
+      "loopId": "17",
+      "loopLength": 16,
+      "name": "Sub F3",
+      "url": "demo-pulse/Bass/loop/Sub/Sub_F3/Sub_F3.wav",
+      "padData": {
+        "channelId": 2,
+        "rowId": 5,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "17",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Chords_A4.wav",
+      "gain": "0",
+      "kind": "Chords",
+      "loopId": "18",
+      "loopLength": 16,
+      "name": "Chords A4",
+      "url": "demo-pulse/Melodic/loop/Chords/Chords_A4/Chords_A4.wav",
+      "padData": {
+        "channelId": 3,
+        "rowId": 0,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "18",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Chords_B4.wav",
+      "gain": "0",
+      "kind": "Chords",
+      "loopId": "19",
+      "loopLength": 16,
+      "name": "Chords B4",
+      "url": "demo-pulse/Melodic/loop/Chords/Chords_B4/Chords_B4.wav",
+      "padData": {
+        "channelId": 3,
+        "rowId": 1,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "19",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Chords_C4.wav",
+      "gain": "0",
+      "kind": "Chords",
+      "loopId": "20",
+      "loopLength": 16,
+      "name": "Chords C4",
+      "url": "demo-pulse/Melodic/loop/Chords/Chords_C4/Chords_C4.wav",
+      "padData": {
+        "channelId": 3,
+        "rowId": 2,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "20",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Chords_D4.wav",
+      "gain": "0",
+      "kind": "Chords",
+      "loopId": "21",
+      "loopLength": 16,
+      "name": "Chords D4",
+      "url": "demo-pulse/Melodic/loop/Chords/Chords_D4/Chords_D4.wav",
+      "padData": {
+        "channelId": 3,
+        "rowId": 3,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "21",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Chords_E4.wav",
+      "gain": "0",
+      "kind": "Chords",
+      "loopId": "22",
+      "loopLength": 16,
+      "name": "Chords E4",
+      "url": "demo-pulse/Melodic/loop/Chords/Chords_E4/Chords_E4.wav",
+      "padData": {
+        "channelId": 3,
+        "rowId": 4,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "22",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Chords_F4.wav",
+      "gain": "0",
+      "kind": "Chords",
+      "loopId": "23",
+      "loopLength": 16,
+      "name": "Chords F4",
+      "url": "demo-pulse/Melodic/loop/Chords/Chords_F4/Chords_F4.wav",
+      "padData": {
+        "channelId": 3,
+        "rowId": 5,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "23",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Lead_A5.wav",
+      "gain": "0",
+      "kind": "Lead",
+      "loopId": "24",
+      "loopLength": 16,
+      "name": "Lead A5",
+      "url": "demo-pulse/Melodic/loop/Lead/Lead_A5/Lead_A5.wav",
+      "padData": {
+        "channelId": 4,
+        "rowId": 0,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "24",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Lead_B5.wav",
+      "gain": "0",
+      "kind": "Lead",
+      "loopId": "25",
+      "loopLength": 16,
+      "name": "Lead B5",
+      "url": "demo-pulse/Melodic/loop/Lead/Lead_B5/Lead_B5.wav",
+      "padData": {
+        "channelId": 4,
+        "rowId": 1,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "25",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Lead_C5.wav",
+      "gain": "0",
+      "kind": "Lead",
+      "loopId": "26",
+      "loopLength": 16,
+      "name": "Lead C5",
+      "url": "demo-pulse/Melodic/loop/Lead/Lead_C5/Lead_C5.wav",
+      "padData": {
+        "channelId": 4,
+        "rowId": 2,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "26",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Lead_D5.wav",
+      "gain": "0",
+      "kind": "Lead",
+      "loopId": "27",
+      "loopLength": 16,
+      "name": "Lead D5",
+      "url": "demo-pulse/Melodic/loop/Lead/Lead_D5/Lead_D5.wav",
+      "padData": {
+        "channelId": 4,
+        "rowId": 3,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "27",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Lead_E5.wav",
+      "gain": "0",
+      "kind": "Lead",
+      "loopId": "28",
+      "loopLength": 16,
+      "name": "Lead E5",
+      "url": "demo-pulse/Melodic/loop/Lead/Lead_E5/Lead_E5.wav",
+      "padData": {
+        "channelId": 4,
+        "rowId": 4,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "28",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Lead_F5.wav",
+      "gain": "0",
+      "kind": "Lead",
+      "loopId": "29",
+      "loopLength": 16,
+      "name": "Lead F5",
+      "url": "demo-pulse/Melodic/loop/Lead/Lead_F5/Lead_F5.wav",
+      "padData": {
+        "channelId": 4,
+        "rowId": 5,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "29",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Pad_A6.wav",
+      "gain": "0",
+      "kind": "Pad",
+      "loopId": "30",
+      "loopLength": 16,
+      "name": "Pad A6",
+      "url": "demo-pulse/Melodic/loop/Pad/Pad_A6/Pad_A6.wav",
+      "padData": {
+        "channelId": 5,
+        "rowId": 0,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "30",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Pad_B6.wav",
+      "gain": "0",
+      "kind": "Pad",
+      "loopId": "31",
+      "loopLength": 16,
+      "name": "Pad B6",
+      "url": "demo-pulse/Melodic/loop/Pad/Pad_B6/Pad_B6.wav",
+      "padData": {
+        "channelId": 5,
+        "rowId": 1,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "31",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Pad_C6.wav",
+      "gain": "0",
+      "kind": "Pad",
+      "loopId": "32",
+      "loopLength": 16,
+      "name": "Pad C6",
+      "url": "demo-pulse/Melodic/loop/Pad/Pad_C6/Pad_C6.wav",
+      "padData": {
+        "channelId": 5,
+        "rowId": 2,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "32",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Pad_D6.wav",
+      "gain": "0",
+      "kind": "Pad",
+      "loopId": "33",
+      "loopLength": 16,
+      "name": "Pad D6",
+      "url": "demo-pulse/Melodic/loop/Pad/Pad_D6/Pad_D6.wav",
+      "padData": {
+        "channelId": 5,
+        "rowId": 3,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "33",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Pad_E6.wav",
+      "gain": "0",
+      "kind": "Pad",
+      "loopId": "34",
+      "loopLength": 16,
+      "name": "Pad E6",
+      "url": "demo-pulse/Melodic/loop/Pad/Pad_E6/Pad_E6.wav",
+      "padData": {
+        "channelId": 5,
+        "rowId": 4,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "34",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "Melodic",
+      "file": "Pad_F6.wav",
+      "gain": "0",
+      "kind": "Pad",
+      "loopId": "35",
+      "loopLength": 16,
+      "name": "Pad F6",
+      "url": "demo-pulse/Melodic/loop/Pad/Pad_F6/Pad_F6.wav",
+      "padData": {
+        "channelId": 5,
+        "rowId": 5,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "35",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      },
+      "type": "loop",
+      "lightIndex": null
+    },
+    {
+      "category": "FX",
+      "file": "Rise_A7.wav",
+      "gain": "0",
+      "kind": "Rise",
+      "loopId": "36",
+      "loopLength": 16,
+      "name": "Rise A7",
+      "url": "demo-pulse/FX/oneshot/Rise/Rise_A7/Rise_A7.wav",
+      "padData": {
+        "channelId": 6,
+        "rowId": 0,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "36",
+          "trigger": {
+            "type": "oneshot"
+          }
+        }
+      },
+      "type": "oneshot",
+      "lightIndex": null
+    },
+    {
+      "category": "FX",
+      "file": "Rise_B7.wav",
+      "gain": "0",
+      "kind": "Rise",
+      "loopId": "37",
+      "loopLength": 16,
+      "name": "Rise B7",
+      "url": "demo-pulse/FX/oneshot/Rise/Rise_B7/Rise_B7.wav",
+      "padData": {
+        "channelId": 6,
+        "rowId": 1,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "37",
+          "trigger": {
+            "type": "oneshot"
+          }
+        }
+      },
+      "type": "oneshot",
+      "lightIndex": null
+    },
+    {
+      "category": "FX",
+      "file": "Rise_C7.wav",
+      "gain": "0",
+      "kind": "Rise",
+      "loopId": "38",
+      "loopLength": 16,
+      "name": "Rise C7",
+      "url": "demo-pulse/FX/oneshot/Rise/Rise_C7/Rise_C7.wav",
+      "padData": {
+        "channelId": 6,
+        "rowId": 2,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "38",
+          "trigger": {
+            "type": "oneshot"
+          }
+        }
+      },
+      "type": "oneshot",
+      "lightIndex": null
+    },
+    {
+      "category": "FX",
+      "file": "Rise_D7.wav",
+      "gain": "0",
+      "kind": "Rise",
+      "loopId": "39",
+      "loopLength": 16,
+      "name": "Rise D7",
+      "url": "demo-pulse/FX/oneshot/Rise/Rise_D7/Rise_D7.wav",
+      "padData": {
+        "channelId": 6,
+        "rowId": 3,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "39",
+          "trigger": {
+            "type": "oneshot"
+          }
+        }
+      },
+      "type": "oneshot",
+      "lightIndex": null
+    },
+    {
+      "category": "FX",
+      "file": "Rise_E7.wav",
+      "gain": "0",
+      "kind": "Rise",
+      "loopId": "40",
+      "loopLength": 16,
+      "name": "Rise E7",
+      "url": "demo-pulse/FX/oneshot/Rise/Rise_E7/Rise_E7.wav",
+      "padData": {
+        "channelId": 6,
+        "rowId": 4,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "40",
+          "trigger": {
+            "type": "oneshot"
+          }
+        }
+      },
+      "type": "oneshot",
+      "lightIndex": null
+    },
+    {
+      "category": "FX",
+      "file": "Rise_F7.wav",
+      "gain": "0",
+      "kind": "Rise",
+      "loopId": "41",
+      "loopLength": 16,
+      "name": "Rise F7",
+      "url": "demo-pulse/FX/oneshot/Rise/Rise_F7/Rise_F7.wav",
+      "padData": {
+        "channelId": 6,
+        "rowId": 5,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "41",
+          "trigger": {
+            "type": "oneshot"
+          }
+        }
+      },
+      "type": "oneshot",
+      "lightIndex": null
+    },
+    {
+      "category": "FX",
+      "file": "Hit_A8.wav",
+      "gain": "0",
+      "kind": "Hit",
+      "loopId": "42",
+      "loopLength": 16,
+      "name": "Hit A8",
+      "url": "demo-pulse/FX/oneshot/Hit/Hit_A8/Hit_A8.wav",
+      "padData": {
+        "channelId": 7,
+        "rowId": 0,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "42",
+          "trigger": {
+            "type": "oneshot"
+          }
+        }
+      },
+      "type": "oneshot",
+      "lightIndex": null
+    },
+    {
+      "category": "FX",
+      "file": "Hit_B8.wav",
+      "gain": "0",
+      "kind": "Hit",
+      "loopId": "43",
+      "loopLength": 16,
+      "name": "Hit B8",
+      "url": "demo-pulse/FX/oneshot/Hit/Hit_B8/Hit_B8.wav",
+      "padData": {
+        "channelId": 7,
+        "rowId": 1,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "43",
+          "trigger": {
+            "type": "oneshot"
+          }
+        }
+      },
+      "type": "oneshot",
+      "lightIndex": null
+    },
+    {
+      "category": "FX",
+      "file": "Hit_C8.wav",
+      "gain": "0",
+      "kind": "Hit",
+      "loopId": "44",
+      "loopLength": 16,
+      "name": "Hit C8",
+      "url": "demo-pulse/FX/oneshot/Hit/Hit_C8/Hit_C8.wav",
+      "padData": {
+        "channelId": 7,
+        "rowId": 2,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "44",
+          "trigger": {
+            "type": "oneshot"
+          }
+        }
+      },
+      "type": "oneshot",
+      "lightIndex": null
+    },
+    {
+      "category": "FX",
+      "file": "Hit_D8.wav",
+      "gain": "0",
+      "kind": "Hit",
+      "loopId": "45",
+      "loopLength": 16,
+      "name": "Hit D8",
+      "url": "demo-pulse/FX/oneshot/Hit/Hit_D8/Hit_D8.wav",
+      "padData": {
+        "channelId": 7,
+        "rowId": 3,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "45",
+          "trigger": {
+            "type": "oneshot"
+          }
+        }
+      },
+      "type": "oneshot",
+      "lightIndex": null
+    },
+    {
+      "category": "FX",
+      "file": "Hit_E8.wav",
+      "gain": "0",
+      "kind": "Hit",
+      "loopId": "46",
+      "loopLength": 16,
+      "name": "Hit E8",
+      "url": "demo-pulse/FX/oneshot/Hit/Hit_E8/Hit_E8.wav",
+      "padData": {
+        "channelId": 7,
+        "rowId": 4,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "46",
+          "trigger": {
+            "type": "oneshot"
+          }
+        }
+      },
+      "type": "oneshot",
+      "lightIndex": null
+    },
+    {
+      "category": "FX",
+      "file": "Hit_F8.wav",
+      "gain": "0",
+      "kind": "Hit",
+      "loopId": "47",
+      "loopLength": 16,
+      "name": "Hit F8",
+      "url": "demo-pulse/FX/oneshot/Hit/Hit_F8/Hit_F8.wav",
+      "padData": {
+        "channelId": 7,
+        "rowId": 5,
+        "pad": {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "47",
+          "trigger": {
+            "type": "oneshot"
+          }
+        }
+      },
+      "type": "oneshot",
+      "lightIndex": null
+    }
+  ],
+  "session": {
+    "channels": [
+      [
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "0",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "1",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "2",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "3",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "4",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "5",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      ],
+      [
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "6",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "7",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "8",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "9",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "10",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "11",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      ],
+      [
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "12",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "13",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "14",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "15",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "16",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "17",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      ],
+      [
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "18",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "19",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "20",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "21",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "22",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "23",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      ],
+      [
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "24",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "25",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "26",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "27",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "28",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "29",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      ],
+      [
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "30",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "31",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "32",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "33",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "34",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "35",
+          "trigger": {
+            "type": "loop",
+            "syncTo": "bar"
+          }
+        }
+      ],
+      [
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "36",
+          "trigger": {
+            "type": "oneshot"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "37",
+          "trigger": {
+            "type": "oneshot"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "38",
+          "trigger": {
+            "type": "oneshot"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "39",
+          "trigger": {
+            "type": "oneshot"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "40",
+          "trigger": {
+            "type": "oneshot"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "41",
+          "trigger": {
+            "type": "oneshot"
+          }
+        }
+      ],
+      [
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "42",
+          "trigger": {
+            "type": "oneshot"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "43",
+          "trigger": {
+            "type": "oneshot"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "44",
+          "trigger": {
+            "type": "oneshot"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "45",
+          "trigger": {
+            "type": "oneshot"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "46",
+          "trigger": {
+            "type": "oneshot"
+          }
+        },
+        {
+          "gain": {
+            "dB": "0"
+          },
+          "loopId": "47",
+          "trigger": {
+            "type": "oneshot"
+          }
+        }
+      ]
+    ],
+    "tempo": 120,
+    "timingSample": null,
+    "title": "Demo Pulse (original)",
+    "patternLength": 16
+  }
+}
