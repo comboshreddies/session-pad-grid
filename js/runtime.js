@@ -6,6 +6,7 @@
 
 import {
   SAMPLE_PACKS,
+  NOVATION_SAMPLE_PACKS,
   LAUNCHPAD_PAD_TO_NOTE_MODERN,
   LAUNCHPAD_PAD_TO_NOTE_CLASSIC,
   noteToPadModern,
@@ -68,6 +69,7 @@ import {
 } from "./wav-meta.js";
 import {
   directoryBaseFromPackJsonUrl,
+  packLoadStatusHint,
   resolvePackJsonUrl,
   slugHintFromPackJsonUrl,
 } from "./pack-url.js";
@@ -248,7 +250,7 @@ function normalizeLoopKindKey(loop) {
   if (!loop) return "Unknown";
   const direct = String(loop.kind ?? "").trim();
   if (direct) return direct;
-  /** Many Arcade `pack.json` loops omit `kind`; `category` is the next-best “kind” axis (see `download_soundlib.py`). */
+  /** Many Arcade `pack.json` loops omit `kind`; `category` is the next-best “kind” axis (see `scripts/download_soundlib.py`). */
   const cat = String(loop.category ?? "").trim();
   if (cat) return cat;
   const pd =
@@ -261,7 +263,7 @@ function normalizeLoopKindKey(loop) {
 }
 
 /**
- * `loop.url` after `download_soundlib.py` is like `slug/cat/type/kind/name/file.wav` (≥4 dirs before file).
+ * `loop.url` after `scripts/download_soundlib.py` is like `slug/cat/type/kind/name/file.wav` (≥4 dirs before file).
  * The **type** folder is one level above **kind** — use it when JSON `type` is only the trigger (`loop`, etc.).
  */
 function typeLegendKeyFromPackUrl(loop) {
@@ -2464,6 +2466,21 @@ function fillPackSelectLocal() {
   store.currentPackSlug = slug;
 }
 
+function fillPackSelectNovationProxy() {
+  rebuildPackSelect(NOVATION_SAMPLE_PACKS);
+  const slug =
+    NOVATION_SAMPLE_PACKS.some((p) => p.slug === store.currentPackSlug) ?
+      store.currentPackSlug
+    : NOVATION_SAMPLE_PACKS[0].slug;
+  dom.pack.value = slug;
+  store.currentPackSlug = slug;
+}
+
+function fillPackSelectForAssetSource() {
+  if (getAssetSource() === "proxy") fillPackSelectNovationProxy();
+  else fillPackSelectLocal();
+}
+
 /** @param {import('./pack-catalog.js').PackCatalogEntry[]} entries */
 function applyRemoteCatalogToPackSelect(entries, preferredSlug) {
   rebuildPackSelect(entries);
@@ -2588,7 +2605,9 @@ async function loadPack(slug) {
 async function loadPackFromUrl(packJsonUrl) {
   const url = resolvePackJsonUrl(packJsonUrl, typeof location !== "undefined" ? location.href : "");
   const res = await fetch(url, { cache: "no-store", mode: "cors" });
-  if (!res.ok) throw new Error(`pack ${res.status}: ${url}`);
+  if (!res.ok) {
+    throw new Error(`pack ${res.status}: ${url}${packLoadStatusHint(res.status, url)}`);
+  }
   const json = await res.json();
   const slug = slugHintFromPackJsonUrl(url);
   return { state: buildPackState(slug, json), packJsonUrl: url };
@@ -4314,7 +4333,7 @@ async function connectMidi() {
 }
 
 function fillPackSelect() {
-  fillPackSelectLocal();
+  fillPackSelectForAssetSource();
 }
 
 dom.btnAudio.addEventListener("click", async () => {
@@ -4429,7 +4448,7 @@ function onAssetSourceChange() {
   }
   setRemotePackUiStatus("idle");
   clearRemotePackSource();
-  fillPackSelectLocal();
+  fillPackSelectForAssetSource();
   applyPack(dom.pack.value || store.currentPackSlug).catch((e) => {
     if (dom.midi) {
       dom.midi.textContent = `Load error: ${e.message ?? e}. ${assetLoadErrorHint()}`;
@@ -4532,9 +4551,9 @@ dom.midiInput?.addEventListener("change", () => {
 export function boot() {
   registerLedSync(syncLaunchpadLedForLoop);
   registerColumnMutePadClassSync(applyColumnMuteWebPadForLoop);
-  fillPackSelect();
   fillAssetSourceSelect();
   restoreSettingsFromLocalStorage();
+  fillPackSelect();
   syncAssetSourceRemotePanel();
   if (getAssetSource() === "remote") {
     const remoteUrl = dom.packRemoteUrl?.value.trim() ?? "";

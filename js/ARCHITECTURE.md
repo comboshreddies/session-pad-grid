@@ -63,6 +63,7 @@ Remote: loadRemotePackFromUi → fetch URL
 | Task | Edit |
 |------|------|
 | New sample pack slug (local) | `config.js` `SAMPLE_PACKS` + `soundlib/<slug>/` |
+| Novation proxy sample sets | `config.js` `NOVATION_SAMPLE_PACKS` (sync with `catalog.novation-proxy.json`) |
 | Freesound WAV loop pack | `scripts/build_freesound_pack.py` → `soundlib/freesound-loops/` + `catalog.freesound.json` |
 | localStorage v0 migration | `storage-migrate.js` (`migrateStorageKeysFromV0`) |
 | Remote pack list | Host `catalog.json`; load via Custom URL (`pack-catalog.js`) |

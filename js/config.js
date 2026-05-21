@@ -6,12 +6,32 @@ export const ASSET_NOVATION_CDN = "https://intro.novationmusic.com/";
 /** Same-origin proxy path when running `python3 server.py` (not available on static GitHub Pages). */
 export const ASSET_NOVATION_PROXY = "novation/";
 
-/** Same slugs as on https://intro.novationmusic.com/ (see download_soundlib.py discover / all). */
+/** Same slugs as on https://intro.novationmusic.com/ (see scripts/download_soundlib.py discover / all). */
 export const SAMPLE_PACKS = [
   { slug: "demo-pulse", title: "Demo Pulse (original)" },
   { slug: "demo-echo", title: "Demo Echo (original)" },
   /** Needs `soundlib/freesound-loops/pack.json` — run `python3 scripts/build_freesound_pack.py --stub` or full Freesound build. */
   { slug: "freesound-loops", title: "Freesound Loops (WAV ≤8s)" },
+];
+
+/**
+ * Novation Launchpad Arcade slugs for **Novation (local proxy)** (`server.py` → `/novation/packs/…`).
+ * Keep in sync with `soundlib/catalog.novation-proxy.json` (regenerate via `scripts/generate_novation_catalog.py`).
+ */
+export const NOVATION_SAMPLE_PACKS = [
+  { slug: "analogue-jewels", title: "Analogue Jewels" },
+  { slug: "clap-trap", title: "Clap Trap" },
+  { slug: "future-house-fusion", title: "Future House Fusion" },
+  { slug: "harry-coade", title: "Harry Coade // Found Sound" },
+  { slug: "hazy-beat", title: "Hazy Beat" },
+  { slug: "high-roller", title: "High Roller" },
+  { slug: "hypnotic-energy", title: "Hypnotic Energy" },
+  { slug: "kaskobi-nytrix", title: "Kaskobi // Nytrix - Stay Here Forever" },
+  { slug: "nick-hook", title: "Nick Hook" },
+  { slug: "retro-grain", title: "Retro Grain" },
+  { slug: "sugar-vape", title: "Sugar Vape" },
+  { slug: "viral-hiphop", title: "Viral Hiphop" },
+  { slug: "wonk-pop", title: "Wonk Pop" },
 ];
 
 /**

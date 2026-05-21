@@ -6,9 +6,10 @@ Usage (from repo root):
   python3 scripts/generate_novation_catalog.py
 
 Writes:
-  soundlib/catalog.novation.json          — local soundlib/ after download_soundlib.py
+  soundlib/catalog.novation.json          — each pack `url` → https://intro.novationmusic.com/packs/<slug>/pack.json
+  soundlib/catalog.novation-local.json    — relative soundlib/<slug>/pack.json (after scripts/download_soundlib.py)
   soundlib/catalog.novation-proxy.json    — python3 server.py + Custom URL (/novation/ proxy)
-  soundlib/catalog.novation-cdn.json      — full https://intro.novationmusic.com/ pack.json URLs
+  soundlib/catalog.novation-cdn.json      — same URLs as catalog.novation.json (alias)
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SOUNDLIB = ROOT / "soundlib"
 ORIGIN = "https://intro.novationmusic.com"
 
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
 from download_soundlib import discover_slugs, fetch  # noqa: E402
 
 
@@ -41,11 +42,26 @@ def main() -> None:
         packs.append({"slug": slug, "title": title})
     packs.sort(key=lambda p: p["title"].lower())
 
+    remote = {
+        "title": "Novation Launchpad Arcade (pack.json on intro.novationmusic.com)",
+        "packs": [
+            {
+                "slug": p["slug"],
+                "title": p["title"],
+                "url": f"{ORIGIN}/packs/{p['slug']}/pack.json",
+            }
+            for p in packs
+        ],
+    }
+    remote_text = json.dumps(remote, indent=2) + "\n"
+    (SOUNDLIB / "catalog.novation.json").write_text(remote_text, encoding="utf-8")
+    (SOUNDLIB / "catalog.novation-cdn.json").write_text(remote_text, encoding="utf-8")
+
     local = {
-        "title": "Novation Launchpad Arcade (local soundlib)",
+        "title": "Novation Launchpad Arcade (local soundlib/ after scripts/download_soundlib.py)",
         "packs": packs,
     }
-    (SOUNDLIB / "catalog.novation.json").write_text(
+    (SOUNDLIB / "catalog.novation-local.json").write_text(
         json.dumps(local, indent=2) + "\n",
         encoding="utf-8",
     )
@@ -63,22 +79,6 @@ def main() -> None:
     }
     (SOUNDLIB / "catalog.novation-proxy.json").write_text(
         json.dumps(proxy, indent=2) + "\n",
-        encoding="utf-8",
-    )
-
-    cdn = {
-        "title": "Novation Launchpad Arcade (CDN — needs CORS or download locally)",
-        "packs": [
-            {
-                "slug": p["slug"],
-                "title": p["title"],
-                "url": f"{ORIGIN}/packs/{p['slug']}/pack.json",
-            }
-            for p in packs
-        ],
-    }
-    (SOUNDLIB / "catalog.novation-cdn.json").write_text(
-        json.dumps(cdn, indent=2) + "\n",
         encoding="utf-8",
     )
 

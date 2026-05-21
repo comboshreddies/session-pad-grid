@@ -54,6 +54,48 @@ function httpPackUrlFromSoundlibPath(pathname, pageHref) {
 }
 
 /**
+ * Collapse duplicate slashes in the path (e.g. `//soundlib/` from pasted URLs).
+ * @param {string} href
+ * @returns {string}
+ */
+export function normalizeHttpUrl(href) {
+  try {
+    const u = new URL(href);
+    u.pathname = u.pathname.replace(/\/{2,}/g, "/");
+    return u.href;
+  } catch {
+    return href;
+  }
+}
+
+/**
+ * Extra hint when pack.json fetch fails (e.g. Novation slugs not hosted on GitHub Pages).
+ * @param {number} status
+ * @param {string} url
+ * @returns {string}
+ */
+export function packLoadStatusHint(status, url) {
+  if (status !== 404) return "";
+  try {
+    const u = new URL(url);
+    const host = (u.hostname || "").toLowerCase();
+    const m = u.pathname.match(/\/soundlib\/([^/]+)\/pack\.json$/i);
+    const slug = m?.[1];
+    if (!slug) return "";
+    const onPages = host === "github.io" || host.endsWith(".github.io");
+    if (!onPages) return "";
+    if (slug === "demo-echo" || slug === "demo-pulse") return "";
+    return (
+      " That pack is not on GitHub Pages (only demo-echo/demo-pulse are committed). " +
+      "On the live site use …/soundlib/catalog.github-pages.json, or locally run " +
+      "catalog.novation-local.json after scripts/download_soundlib.py, or catalog.novation-proxy.json with server.py."
+    );
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Resolve user input to a URL the browser can fetch.
  * Accepts http(s), file://, and absolute paths. Local paths under …/soundlib/&lt;slug&gt;/pack.json
  * are rewritten to same-origin http when the page is not file://.
@@ -74,7 +116,7 @@ export function resolvePackJsonUrl(input, pageHref = typeof location !== "undefi
 
   if (/^https?:\/\//i.test(s)) {
     try {
-      return new URL(s).href;
+      return normalizeHttpUrl(new URL(s).href);
     } catch {
       throw new Error("Invalid pack.json URL.");
     }

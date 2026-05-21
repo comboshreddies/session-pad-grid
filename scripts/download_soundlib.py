@@ -8,10 +8,10 @@ Download Novation Arcade pack.json + WAVs into ./soundlib/<slug>/ with layout:
 Then writes soundlib/<slug>/pack.json with loop.url rewritten for local paths
 (ASSET_BASE /soundlib/ in app.js).
 
-Usage (from this directory):
-  python3 download_soundlib.py viral-hiphop    # one pack
-  python3 download_soundlib.py all             # every pack (slugs from Novation /js/bundle.js)
-  python3 download_soundlib.py discover        # print slugs only, no download
+Usage (from repo root):
+  python3 scripts/download_soundlib.py viral-hiphop    # one pack
+  python3 scripts/download_soundlib.py all             # every pack (slugs from Novation /js/bundle.js)
+  python3 scripts/download_soundlib.py discover        # print slugs only, no download
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ FALLBACK_SLUGS = (
     "high-roller",
     "kaskobi-nytrix",
 )
-ROOT = Path(__file__).resolve().parent / "soundlib"
+ROOT = Path(__file__).resolve().parent.parent / "soundlib"
 _SLUG_RE = re.compile(r"packs/([a-z0-9-]+)/pack")
 
 

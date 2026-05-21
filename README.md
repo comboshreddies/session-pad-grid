@@ -7,14 +7,14 @@ Browser session pad player (**Web MIDI** + **Web Audio**) for [Launchpad Arcade]
 **Code layout:** ES modules under [`js/`](js/) — see [`js/ARCHITECTURE.md`](js/ARCHITECTURE.md) for boundaries and safe-edit rules. Entry: [`app.js`](app.js).
 
 ```bash
-python3 download_soundlib.py viral-hiphop   # optional: fetch a pack
+python3 scripts/download_soundlib.py viral-hiphop   # optional: fetch a pack
 python3 server.py
 # open http://127.0.0.1:8765/
 ```
 
 Register custom packs in the `SAMPLE_PACKS` array in `js/config.js`, or reuse an existing slug directory under `soundlib/<slug>/`. For **many packs on a web server**, publish a **`catalog.json`** (see below) — browsers cannot list directory URLs to discover `pack.json` files automatically.
 
-**Bundled demo packs (safe to commit):** `demo-pulse` and `demo-echo` are original synthesized loops (~6.6 MB each). Regenerate with `python3 scripts/generate_demo_packs.py`. See `soundlib/DEMO-SAMPLES-LICENSE.md`. Novation packs from `download_soundlib.py` stay gitignored unless you choose to add them yourself.
+**Bundled demo packs (safe to commit):** `demo-pulse` and `demo-echo` are original synthesized loops (~6.6 MB each). Regenerate with `python3 scripts/generate_demo_packs.py`. See `soundlib/DEMO-SAMPLES-LICENSE.md`. Novation packs from `scripts/download_soundlib.py` stay gitignored unless you choose to add them yourself.
 
 ### Freesound packs ([freesound.org](https://freesound.org/))
 
@@ -133,9 +133,10 @@ Official packs from [Launchpad Arcade](https://intro.novationmusic.com/) (13 pac
 
 | File | Use when |
 |------|----------|
-| `catalog.novation.json` | You ran `python3 download_soundlib.py all` and serve files from `soundlib/<slug>/`. Custom URL: `…/soundlib/catalog.novation.json`. |
-| `catalog.novation-proxy.json` | **`python3 server.py`** on this machine. Custom URL: `http://127.0.0.1:8765/soundlib/catalog.novation-proxy.json` — streams packs/WAVs via same-origin `/novation/` proxy. |
-| `catalog.novation-cdn.json` | Reference / testing only; direct CDN fetches often fail CORS in the browser. Prefer proxy or local download. |
+| `catalog.novation.json` | Each pack’s `url` → `https://intro.novationmusic.com/packs/<slug>/pack.json`. Load locally via Custom URL (needs Novation **CORS** for WAVs). |
+| `catalog.novation-local.json` | Relative `soundlib/<slug>/pack.json` after `python3 scripts/download_soundlib.py all` (not on GitHub Pages). |
+| `catalog.novation-proxy.json` | **`python3 server.py`** — Custom URL: `http://127.0.0.1:8765/soundlib/catalog.novation-proxy.json` (same-origin `/novation/` proxy, best for Novation). |
+| `catalog.novation-cdn.json` | Same as `catalog.novation.json` (alias). |
 
 **Asset source “Novation (local proxy)”** still works without a catalog (built-in slugs in `js/config.js` when listed). The catalog is for **Custom URL** + **Sample set** switching across all Novation packs.
 
@@ -154,7 +155,8 @@ Example manifests in the repo (copy to your server as `catalog.json`):
 | `soundlib/catalog.github-pages.json` | Ready-to-load catalog for [comboshreddies/session-pad-grid](https://github.com/comboshreddies/session-pad-grid) on Pages |
 | `soundlib/catalog.example-full-url.json` | Same full URLs (example copy) |
 | `soundlib/catalog.example-github-pages.json` | Same URLs (example copy for docs) |
-| `soundlib/catalog.novation.json` | Novation Arcade — local `soundlib/<slug>/` after `download_soundlib.py` |
+| `soundlib/catalog.novation.json` | Novation Arcade — full `intro.novationmusic.com` pack.json URLs |
+| `soundlib/catalog.novation-local.json` | Novation — local `soundlib/<slug>/` after `scripts/download_soundlib.py` |
 | `soundlib/catalog.novation-proxy.json` | Novation via `server.py` — `/novation/packs/<slug>/pack.json` (Custom URL + **Load**) |
 | `soundlib/catalog.novation-cdn.json` | Novation CDN full URLs (often blocked by CORS in the browser) |
 | `soundlib/catalog.freesound.json` | Local **freesound-loops** after `build_freesound_pack.py` (stub or WAV) |
@@ -292,7 +294,7 @@ Expand each column to 6+ rows to fill the clip grid; pad **1A** = column 1, row 
    - **Custom URL / catalog:** directory containing the loaded `pack.json` (if the path still starts with `<slug>/`, that prefix is stripped so WAVs are not requested twice)
 2. **Absolute URL** — `https://…` fetched as-is (Freesound previews, your CDN, etc.; needs CORS unless same-origin).
 
-After `download_soundlib.py`, URLs look like:
+After `scripts/download_soundlib.py`, URLs look like:
 
 ```text
 <slug>/<category>/<type>/<kind>/<name>/<filename.wav>
@@ -362,7 +364,7 @@ There is **no** extension check in code — success depends on **what the browse
 
 | Format | Extensions | Notes |
 |--------|------------|--------|
-| **WAV (PCM)** | `.wav` | **Default choice** — matches Arcade, `download_soundlib.py`, and bar/beat sync behavior. |
+| **WAV (PCM)** | `.wav` | **Default choice** — matches Arcade, `scripts/download_soundlib.py`, and bar/beat sync behavior. |
 | **AIFF** | `.aif`, `.aiff` | Present in some official packs; works on many Safari/macOS setups; test on Chrome if you target it. |
 
 ### May work (browser-dependent)
@@ -412,7 +414,7 @@ The same files work in both places. Only **how you host** and **asset source** c
 | | **Local (`python3 server.py`)** | **GitHub Pages** |
 |--|--|--|
 | **Host** | `python3 server.py` → `http://127.0.0.1:8765/` | Static deploy from repo root |
-| **Local soundlib** | `soundlib/` on disk (via `download_soundlib.py`) | Commit `soundlib/<slug>/` in git (not in `.gitignore` for deploy) |
+| **Local soundlib** | `soundlib/` on disk (via `scripts/download_soundlib.py`) | Commit `soundlib/<slug>/` in git (not in `.gitignore` for deploy) |
 | **Novation proxy** | Asset source **Novation (local proxy)** → `novation/` proxied by `server.py` | Not available — use **Local soundlib** or **Custom URL** |
 | **Custom URL / catalog** | Paste `pack.json` or `catalog.json` (needs CORS on the remote host) | Same — host `catalog.json` + packs on https with CORS |
 | **Plain static server** | `python3 -m http.server` works with **Local soundlib** only (no `/novation/` proxy) | Same as Pages |
@@ -428,7 +430,7 @@ The app is static HTML + ES modules; no build step is required. Host the **repos
 | Topic | What to do |
 |--------|------------|
 | **URL** | Project site: `https://comboshreddies.github.io/session-pad-grid/`. Asset paths are **relative** (`soundlib/…`) so packs load under the repo prefix. |
-| **Audio files** | `.gitignore` ignores `soundlib/*` except **demo packs**, **catalog\*.json**, license files, and `freesound-remote.example-pack.json`. Commit `demo-pulse` / `demo-echo` for a small Pages demo (~13 MB). Novation / Freesound builds stay local unless you change `.gitignore`. Full `download_soundlib.py all` is ~100 MB+ — consider [Git LFS](https://git-lfs.github.com/) if you commit Novation WAVs. |
+| **Audio files** | `.gitignore` ignores `soundlib/*` except **demo packs**, **catalog\*.json**, license files, and `freesound-remote.example-pack.json`. Commit `demo-pulse` / `demo-echo` for a small Pages demo (~13 MB). Novation / Freesound builds stay local unless you change `.gitignore`. Full `scripts/download_soundlib.py all` is ~100 MB+ — consider [Git LFS](https://git-lfs.github.com/) if you commit Novation WAVs. |
 | **Novation proxy** | `python3 server.py`’s `/novation/` proxy does **not** run on GitHub Pages. Use **Local soundlib** or **Custom URL** online. |
 | **Remote catalog** | Paste a `catalog.json` URL under **Custom URL**; remote host must allow CORS (and CORP if your Pages site uses COEP). |
 | **HTTPS** | GitHub Pages serves HTTPS, which Web MIDI needs in most browsers. |
@@ -438,7 +440,7 @@ The app is static HTML + ES modules; no build step is required. Host the **repos
 
 **Custom URL on the live site:** paste  
 `https://comboshreddies.github.io/session-pad-grid/soundlib/catalog.github-pages.json`  
-and click **Load** (or use **Local soundlib** with committed demo slugs).
+and click **Load** (demo packs only). For Novation on your machine: Custom URL → `http://127.0.0.1:8765/soundlib/catalog.novation.json` (CDN URLs), or `catalog.novation-proxy.json` with `python3 server.py`, or `catalog.novation-local.json` after `scripts/download_soundlib.py`.
 
 **Local check (same layout as Pages):**
 
@@ -457,13 +459,14 @@ python3 -m http.server 8765
 
 | File | Role |
 |------|------|
-| `download_soundlib.py` | Download Arcade `pack.json` + audio into `soundlib/<slug>/` and rewrite `loop.url` for local paths. |
+| `scripts/download_soundlib.py` | Download Arcade `pack.json` + audio into `soundlib/<slug>/` and rewrite `loop.url` for local paths. |
 | `server.py` | Static server for `/soundlib/` and `/novation/` proxy. |
 | `soundlib/catalog.example.json` | Example catalog — relative pack paths. |
 | `soundlib/catalog.example-full-url.json` | Example catalog — full `url` per pack (remote CDN). |
 | `soundlib/catalog.github-pages.json` | GitHub Pages catalog (`comboshreddies/session-pad-grid`). |
 | `soundlib/catalog.example-github-pages.json` | Example copy of the Pages catalog. |
-| `soundlib/catalog.novation.json` | Novation packs — relative paths (local download). |
+| `soundlib/catalog.novation.json` | Novation packs — `intro.novationmusic.com` pack.json URLs. |
+| `soundlib/catalog.novation-local.json` | Novation packs — relative paths (local download). |
 | `soundlib/catalog.novation-proxy.json` | Novation packs — `/novation/packs/…` for `server.py`. |
 | `soundlib/catalog.novation-cdn.json` | Novation packs — `intro.novationmusic.com` URLs. |
 | `scripts/generate_novation_catalog.py` | Refresh Novation catalog files from live Arcade. |

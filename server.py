@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
 Local static server:
-  - **/soundlib/** — files on disk next to server.py (run `python3 download_soundlib.py all` first).
+  - **/soundlib/** — files on disk next to server.py (run `python3 scripts/download_soundlib.py all` first).
   - **/novation/** — reverse-proxy to intro.novationmusic.com so the browser can `fetch` pack.json and WAVs same-origin (avoids CDN CORS).
 
 Run from this directory:
-  python3 download_soundlib.py all   # once, to populate ./soundlib/
+  python3 scripts/download_soundlib.py all   # once, to populate ./soundlib/
   python3 server.py
 Then open http://127.0.0.1:8765/
 """

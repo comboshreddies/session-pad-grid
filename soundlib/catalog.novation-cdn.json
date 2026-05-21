@@ -1,5 +1,5 @@
 {
-  "title": "Novation Launchpad Arcade (CDN \u2014 needs CORS or download locally)",
+  "title": "Novation Launchpad Arcade (pack.json on intro.novationmusic.com)",
   "packs": [
     {
       "slug": "analogue-jewels",

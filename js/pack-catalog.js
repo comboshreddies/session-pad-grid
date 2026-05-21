@@ -3,7 +3,7 @@
  * Remote pack lists via a manifest JSON (browsers cannot list directory URLs).
  */
 
-import { resolvePackJsonUrl } from "./pack-url.js";
+import { normalizeHttpUrl, resolvePackJsonUrl } from "./pack-url.js";
 
 /**
  * @typedef {{ slug: string, title: string, packJsonUrl: string }} PackCatalogEntry
@@ -28,7 +28,7 @@ export function isPackCatalogDocument(json) {
  * @returns {PackCatalogEntry[]}
  */
 export function parsePackCatalog(json, catalogUrl, pageHref = typeof location !== "undefined" ? location.href : "") {
-  const base = new URL("./", catalogUrl).href;
+  const base = normalizeHttpUrl(new URL("./", catalogUrl).href);
   const rawList = Array.isArray(json)
     ? json
     : Array.isArray(/** @type {{ packs?: unknown[] }} */ (json).packs)
@@ -47,13 +47,15 @@ export function parsePackCatalog(json, catalogUrl, pageHref = typeof location !=
     if (/^https?:\/\//i.test(packRef)) {
       packJsonUrl = resolvePackJsonUrl(packRef, pageHref);
     } else if (packRef.startsWith("/")) {
-      packJsonUrl = new URL(packRef, pageHref || base).href;
+      packJsonUrl = normalizeHttpUrl(new URL(packRef, pageHref || base).href);
     } else {
       const rel = packRef.replace(/^\//, "");
-      packJsonUrl = new URL(
-        rel.split("/").map((seg) => encodeURIComponent(seg)).join("/"),
-        base,
-      ).href;
+      packJsonUrl = normalizeHttpUrl(
+        new URL(
+          rel.split("/").map((seg) => encodeURIComponent(seg)).join("/"),
+          base,
+        ).href,
+      );
     }
     entries.push({ slug, title, packJsonUrl });
   }

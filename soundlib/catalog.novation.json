@@ -1,57 +1,70 @@
 {
-  "title": "Novation Launchpad Arcade (local soundlib)",
+  "title": "Novation Launchpad Arcade (pack.json on intro.novationmusic.com)",
   "packs": [
     {
       "slug": "analogue-jewels",
-      "title": "Analogue Jewels"
+      "title": "Analogue Jewels",
+      "url": "https://intro.novationmusic.com/packs/analogue-jewels/pack.json"
     },
     {
       "slug": "clap-trap",
-      "title": "Clap Trap"
+      "title": "Clap Trap",
+      "url": "https://intro.novationmusic.com/packs/clap-trap/pack.json"
     },
     {
       "slug": "future-house-fusion",
-      "title": "Future House Fusion"
+      "title": "Future House Fusion",
+      "url": "https://intro.novationmusic.com/packs/future-house-fusion/pack.json"
     },
     {
       "slug": "harry-coade",
-      "title": "Harry Coade // Found Sound"
+      "title": "Harry Coade // Found Sound",
+      "url": "https://intro.novationmusic.com/packs/harry-coade/pack.json"
     },
     {
       "slug": "hazy-beat",
-      "title": "Hazy Beat"
+      "title": "Hazy Beat",
+      "url": "https://intro.novationmusic.com/packs/hazy-beat/pack.json"
     },
     {
       "slug": "high-roller",
-      "title": "High Roller"
+      "title": "High Roller",
+      "url": "https://intro.novationmusic.com/packs/high-roller/pack.json"
     },
     {
       "slug": "hypnotic-energy",
-      "title": "Hypnotic Energy"
+      "title": "Hypnotic Energy",
+      "url": "https://intro.novationmusic.com/packs/hypnotic-energy/pack.json"
     },
     {
       "slug": "kaskobi-nytrix",
-      "title": "Kaskobi // Nytrix - Stay Here Forever"
+      "title": "Kaskobi // Nytrix - Stay Here Forever",
+      "url": "https://intro.novationmusic.com/packs/kaskobi-nytrix/pack.json"
     },
     {
       "slug": "nick-hook",
-      "title": "Nick Hook"
+      "title": "Nick Hook",
+      "url": "https://intro.novationmusic.com/packs/nick-hook/pack.json"
     },
     {
       "slug": "retro-grain",
-      "title": "Retro Grain"
+      "title": "Retro Grain",
+      "url": "https://intro.novationmusic.com/packs/retro-grain/pack.json"
     },
     {
       "slug": "sugar-vape",
-      "title": "Sugar Vape"
+      "title": "Sugar Vape",
+      "url": "https://intro.novationmusic.com/packs/sugar-vape/pack.json"
     },
     {
       "slug": "viral-hiphop",
-      "title": "Viral Hiphop"
+      "title": "Viral Hiphop",
+      "url": "https://intro.novationmusic.com/packs/viral-hiphop/pack.json"
     },
     {
       "slug": "wonk-pop",
-      "title": "Wonk Pop"
+      "title": "Wonk Pop",
+      "url": "https://intro.novationmusic.com/packs/wonk-pop/pack.json"
     }
   ]
 }

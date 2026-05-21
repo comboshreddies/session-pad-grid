@@ -52,8 +52,8 @@ export function assetLoadErrorHint() {
       : "Needs python3 server.py on this host so novation/ is proxied same-origin (not plain http.server).";
   }
   return isGitHubPagesHost()
-    ? "Commit packs under soundlib/<slug>/ in the repo (see download_soundlib.py)."
-    : "Run: python3 download_soundlib.py <slug> then python3 server.py — or python3 -m http.server if soundlib/ is already populated.";
+    ? "Commit packs under soundlib/<slug>/ in the repo (see scripts/download_soundlib.py)."
+    : "Run: python3 scripts/download_soundlib.py <slug> then python3 server.py — or python3 -m http.server if soundlib/ is already populated.";
 }
 
 /** Build asset source options (Novation proxy omitted on GitHub Pages). */

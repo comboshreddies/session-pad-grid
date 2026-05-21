@@ -1109,9 +1109,9 @@
       <ul>
         <li><strong>Local soundlib</strong> — <code>/soundlib/&lt;slug&gt;/pack.json</code> (slugs in <code>js/config.js</code>).</li>
         <li><strong>Novation (proxy)</strong> — <code>/novation/</code> via <code>python3 server.py</code> (same-origin, avoids CORS).</li>
-        <li><strong>Custom URL</strong> — one <code>pack.json</code> URL, or a <code>catalog.json</code> manifest (<code>{ "packs": [ { "slug", "title" } ] }</code>) listing many packs; click <strong>Load</strong>. A catalog enables the <strong>Sample set</strong> dropdown for switching. On GitHub Pages:
+        <li><strong>Custom URL</strong> — one <code>pack.json</code> URL, or a <code>catalog.json</code> manifest; click <strong>Load</strong>. On this GitHub Pages site use
           <a href="https://comboshreddies.github.io/session-pad-grid/soundlib/catalog.github-pages.json">catalog.github-pages.json</a>
-          — repo <a href="https://github.com/comboshreddies/session-pad-grid">comboshreddies/session-pad-grid</a>. See <code>README.md</code>.</li>
+          (demo packs only). Novation: <code>catalog.novation.json</code> (CDN <code>pack.json</code> URLs) or <code>catalog.novation-proxy.json</code> with <code>server.py</code> — see <code>README.md</code>.</li>
         <li>Click <strong>Enable audio</strong> once so Web Audio and bar-sync can run.</li>
       </ul>
     </section>
