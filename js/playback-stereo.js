@@ -77,6 +77,16 @@ export function disconnectVoiceNodes(voice) {
     /* ignore */
   }
   try {
+    voice.distortionDrive?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  try {
+    voice.toneFilter?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  try {
     voice.gain?.disconnect();
   } catch {
     /* ignore */

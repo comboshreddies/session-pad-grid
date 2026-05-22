@@ -758,6 +758,16 @@
       font-weight: 700;
       font-size: 0.52rem;
     }
+    button.pad.side-panel.side-panel-distortion-idle {
+      background: #422006 !important;
+      border-color: #ea580c !important;
+      color: #ffedd5 !important;
+    }
+    button.pad.side-panel.side-panel-distortion-idle .nm {
+      color: #ffedd5 !important;
+      font-weight: 700;
+      font-size: 0.52rem;
+    }
     button.pad.side-panel[data-side-panel-kind="true"].clip-kind-legend-held,
     button.pad.side-panel[data-side-panel-type="true"].clip-type-legend-held {
       filter: brightness(1.12);
@@ -766,6 +776,10 @@
     button.pad.side-panel[data-side-panel-stereo="true"].g6-stereo-menu-held {
       filter: brightness(1.12);
       box-shadow: 0 0 0 2px #a855f7;
+    }
+    button.pad.side-panel[data-side-panel-distortion="true"].g4-distortion-menu-held {
+      filter: brightness(1.12);
+      box-shadow: 0 0 0 2px #f97316;
     }
     button.pad.side-panel.side-panel-inert {
       opacity: 0.2;
@@ -839,6 +853,46 @@
     #pad-grid.g6-stereo-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-pan-step-strip.g6-h-strip-step-current .nm {
       color: #1f2937 !important;
     }
+    /* Distortion menu (scene row 4 / CC 59): purple = selected / drive-query match; row G = drive 1…8, row H = OS / clip / tone. */
+    #pad-grid.g4-distortion-menu-active button.pad[data-loop-id].g4-clip-selected,
+    #pad-grid.g4-distortion-menu-active button.pad[data-loop-id].g4-clip-drive-match {
+      outline: 3px solid #f97316;
+      outline-offset: 1px;
+      box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.45), inset 0 0 0 1px rgba(249, 115, 22, 0.2);
+    }
+    #pad-grid.g4-distortion-menu-active .pad.utility[data-utility-row="6"].g4-g-drive-strip {
+      background: #2a1210 !important;
+      border-color: #7c2d12 !important;
+      color: #fdba74 !important;
+    }
+    #pad-grid.g4-distortion-menu-active .pad.utility[data-utility-row="6"].g4-g-strip-step-apply {
+      background: var(--pad-playing) !important;
+      border-color: var(--pad-playing-border) !important;
+    }
+    #pad-grid.g4-distortion-menu-active .pad.utility[data-utility-row="6"].g4-g-strip-step-query {
+      background: #4c1d7a !important;
+      border-color: #9333ea !important;
+      color: #f5e9ff !important;
+    }
+    #pad-grid.g4-distortion-menu-active .pad.utility[data-utility-row="7"].g4-h-strip-lit {
+      background: #0b2d5c !important;
+      border-color: #2563eb !important;
+      color: #dbeafe !important;
+    }
+    button.pad.side-panel[data-side-panel-distortion="true"].g4-distortion-menu-held {
+      background: #7c2d12 !important;
+      border-color: #f97316 !important;
+    }
+    button.pad .dist-lvl {
+      position: absolute;
+      left: 3px;
+      bottom: 14px;
+      font-size: 0.52rem;
+      line-height: 1;
+      color: #fdba74;
+      opacity: 0.95;
+      pointer-events: none;
+    }
     /* Volume menu (8G): clip grid keeps normal colours; purple = selected / volume-query match; row **H** dark with n/8. */
     #pad-grid.g7-volume-menu-active button.pad[data-loop-id].g7-clip-selected,
     #pad-grid.g7-volume-menu-active button.pad[data-loop-id].g7-clip-volume-match {
@@ -892,27 +946,27 @@
       color: #dbeafe !important;
     }
     /* Idle row **H** (light strip) when neither volume nor pan menu is active. */
-    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active) .pad.utility[data-utility-row="7"]:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) {
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active) .pad.utility[data-utility-row="7"]:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) {
       background: var(--pad-strip-h) !important;
       border-color: var(--pad-strip-h-border) !important;
       color: var(--pad-strip-h-text) !important;
     }
-    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active) .pad.utility[data-utility-row="7"]:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) .nm {
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active) .pad.utility[data-utility-row="7"]:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) .nm {
       color: var(--pad-strip-h-text) !important;
     }
-    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active) .pad.utility[data-utility-row="7"]:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]):hover {
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active) .pad.utility[data-utility-row="7"]:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]):hover {
       background: #f2f4fa !important;
       border-color: #8c9ab8 !important;
     }
-    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active) .pad.utility[data-utility-row="7"].h-stop-modifier-held:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) {
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active) .pad.utility[data-utility-row="7"].h-stop-modifier-held:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) {
       background: #422006 !important;
       border-color: #ea580c !important;
       color: #ffedd5 !important;
     }
-    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active) .pad.utility[data-utility-row="7"].h-stop-modifier-held:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) .nm {
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active) .pad.utility[data-utility-row="7"].h-stop-modifier-held:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) .nm {
       color: #ffedd5 !important;
     }
-    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active) .pad.utility[data-utility-row="7"].h-stop-modifier-held:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]):hover {
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active) .pad.utility[data-utility-row="7"].h-stop-modifier-held:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]):hover {
       background: #7c2d12 !important;
       border-color: #f97316 !important;
     }
@@ -1132,6 +1186,7 @@
         <li><strong>G1–G7</strong> — hold to mute column (release unmutes on hardware note off; web uses hold). Playing clips turn <strong>white</strong> while muted.</li>
         <li><strong>volume</strong> (8G) — hold or click to lock the clip volume menu; row <strong>H</strong> shows <code>1/8</code>…<code>8/8</code> (<strong>8H</strong> = max).</li>
         <li><strong>Right column row 3</strong> (web row <strong>C</strong>, orange <strong>pan</strong> / Mini MK3 CC <strong>69</strong>) — hold for <strong>stereo pan</strong>: select clips <code>1A</code>…<code>8F</code>; row <strong>G</strong> = left <code>L1</code>…<code>L8</code>, row <strong>H</strong> = right <code>R1</code>…<code>R8</code> (<strong>L+R=8</strong>, e.g. <code>G8</code>→<code>R0</code>, <code>H8</code>→<code>L0</code>, <code>G4</code>→<code>R4</code>).</li>
+        <li><strong>Right column row 4</strong> (web row <strong>D</strong>, <strong>dist</strong> / Mini MK3 CC <strong>59</strong>) — hold for <strong>distortion</strong>: select clips <code>1A</code>…<code>8F</code>; row <strong>G</strong> = drive <code>1/8</code>…<code>8/8</code>; row <strong>H</strong>: <code>H1</code>–<code>H3</code> oversample (none / 2× / 4×), <code>H4</code> soft/hard clip, <code>H5</code>–<code>H8</code> tone LPF.</li>
         <li><strong>H1–H7</strong> — hold <strong>stop col</strong> (orange): nothing stops until you tap a <strong>clip</strong> in that column or press <strong>G</strong> (<strong>stop col</strong>, white) to stop the whole column.</li>
         <li><strong>8H</strong> — <code>8/8</code> max volume while the volume menu is active; <strong>R8</strong> while pan is active; otherwise <strong>hold or click to lock</strong> <strong>clock tick sync</strong> and pick ticks with <strong>8A</strong>…<strong>8F</strong>.</li>
         <li><strong>1G</strong>…<strong>7G</strong> — one <strong>purple</strong> pad moves as a visual bar clock (8 steps per loop).</li>
@@ -1168,6 +1223,6 @@
     </section>
   </footer>
 
-  <script type="module" src="./app.js?v=20260523scenecc"></script>
+  <script type="module" src="./app.js?v=20260524distort"></script>
 </body>
 </html>

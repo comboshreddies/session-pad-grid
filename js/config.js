@@ -160,6 +160,21 @@ export const LP_SESSION_G6_STEREO_MENU = {
   stripStepCurrentH: 3,
 };
 
+/** Distortion menu (scene row 4 / CC **59**): row **G** = drive 1…8, row **H** = OS / clip / tone. */
+export const LP_SESSION_G4_DISTORTION_MENU = {
+  clipPurple: 48,
+  stripRowG: 5,
+  stripRowH: 62,
+  stripStepApplyYellow: 13,
+  stripStepQueryPurple: 48,
+  stripStepCurrentG: 37,
+  stripH1: 3,
+  stripH2: 37,
+  stripH3: 21,
+  stripH4: 13,
+  stripTone: [41, 37, 21, 13],
+};
+
 /** Row **H** strip `1H`…`7H` idle — Novation RGB LUT velocity **3** (`FD FD FD`, white). **`8H`** uses `LP_SESSION_G_SYNC.col8Inert` (teal). */
 export const LP_SESSION_STRIP_H_IDLE = 3;
 /** Hold **1H**…**7H** as stop modifier (no stop until clip or **G** in that column). */
@@ -179,6 +194,10 @@ export const SYNC_LOOP_TICKS_STORAGE_KEY = `${STORAGE_KEY_PREFIX}syncPurpleTicks
 /** Right column row 3 (CC **69**): hold for stereo pan (web side panel row **C**). */
 export const MINI_MK3_STEREO_PAN_CC = 69;
 export const MINI_MK3_STEREO_PAN_IDLE_LED = LP_SESSION_PALETTE.armed;
+
+/** Right column row 4 (CC **59**): hold for per-clip distortion (web side panel row **D**). */
+export const MINI_MK3_DISTORTION_CC = 59;
+export const MINI_MK3_DISTORTION_IDLE_LED = LP_SESSION_PALETTE.armed;
 
 export const MINI_MK3_PANEL_RIGHT_CC = new Map([
   [99, "Logo (top row, CC)"],

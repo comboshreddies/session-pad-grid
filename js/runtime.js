@@ -21,7 +21,10 @@ import {
   LP_SESSION_COL8_H8_MENU,
   LP_SESSION_G7_VOLUME_MENU,
   LP_SESSION_G6_STEREO_MENU,
+  LP_SESSION_G4_DISTORTION_MENU,
   LP_SESSION_STRIP_H_IDLE,
+  MINI_MK3_DISTORTION_CC,
+  MINI_MK3_DISTORTION_IDLE_LED,
   LP_SESSION_H_STOP_MODIFIER,
   SESSION_CLIP_LEGEND_SWATCHES,
   MINI_MK3_PANEL_RIGHT_CC,
@@ -62,6 +65,11 @@ import {
 } from "./settings.js";
 import { connectVoiceToMaster, ensureMasterBus } from "./playback-bus.js";
 import { disconnectVoiceNodes, wireBufferSourceWithStereoPan } from "./playback-stereo.js";
+import {
+  attachDistortionToVoice,
+  applyClipDistortionToVoice,
+  defaultClipDistortionParams,
+} from "./playback-distortion.js";
 import {
   clipChannelMark,
   clipChannelModeLabel,
@@ -269,6 +277,7 @@ function isStripMuteStopInertAtPhysicalCol(physicalCol) {
 const SIDE_PANEL_KIND_ROW_IDX = 0;
 const SIDE_PANEL_TYPE_ROW_IDX = 1;
 const SIDE_PANEL_STEREO_ROW_IDX = 2;
+const SIDE_PANEL_DISTORTION_ROW_IDX = 3;
 
 function getActiveOneShot(loopId) {
   const sid = String(loopId);
@@ -472,6 +481,7 @@ function startClipKindLegendHold() {
   if (!store.pack) return;
   if (store.g6StereoPanMenuHeld) setG6StereoPanMenuHeld(false);
   if (store.g7VolumeMenuHeld) setG7VolumeMenuHeld(false);
+  if (store.g4DistortionMenuHeld) setG4DistortionMenuHeld(false);
   if (store.h8ClockStripMenuHeld) setH8ClockStripMenuHeld(false);
   store.clipTypeLegendHeld = false;
   store.clipTypeLegendVelocityByKey.clear();
@@ -498,6 +508,7 @@ function startClipTypeLegendHold() {
   if (!store.pack) return;
   if (store.g6StereoPanMenuHeld) setG6StereoPanMenuHeld(false);
   if (store.g7VolumeMenuHeld) setG7VolumeMenuHeld(false);
+  if (store.g4DistortionMenuHeld) setG4DistortionMenuHeld(false);
   if (store.h8ClockStripMenuHeld) setH8ClockStripMenuHeld(false);
   store.clipKindLegendHeld = false;
   store.clipKindLegendVelocityByKey.clear();
@@ -538,6 +549,16 @@ function launchpadSessionPaletteForClipPadKey(padKey) {
     const queryByH = store.g7VolumeStepSelection != null && store.g7SelectedClipLoopIds.size === 0;
     if (queryByH && loopId != null && getClipG7VolumeStep(loopId) === store.g7VolumeStepSelection) {
       return LP_SESSION_G7_VOLUME_MENU.clipPurple;
+    }
+  }
+  if (store.g4DistortionMenuHeld && isG7ClipVolumeGridSessionPadKey(padKey)) {
+    if (loopId != null && store.g4SelectedClipLoopIds.has(String(loopId))) {
+      return LP_SESSION_G4_DISTORTION_MENU.clipPurple;
+    }
+    const qD =
+      store.g4DistortionDriveStepSelection != null && store.g4SelectedClipLoopIds.size === 0;
+    if (qD && loopId != null && getClipDistortionParams(loopId).drive === store.g4DistortionDriveStepSelection) {
+      return LP_SESSION_G4_DISTORTION_MENU.clipPurple;
     }
   }
   if (store.g6StereoPanMenuHeld && isG7ClipVolumeGridSessionPadKey(padKey)) {
@@ -798,6 +819,18 @@ function handleLaunchpadSceneSideCcPress(port, d1, d2, raw) {
     ]);
     return true;
   }
+  if (d1 === MINI_MK3_DISTORTION_CC) {
+    if (store.pack) setG4DistortionMenuHeld(true);
+    setMidiDebugLine([
+      port.slice(0, 56),
+      raw,
+      cc,
+      store.pack
+        ? "Launchpad · **hold** — distortion (row 4); G=drive 1…8, H=OS/clip/tone, clips 1A…8F"
+        : "Launchpad · distortion (load a sample set first)",
+    ]);
+    return true;
+  }
   return false;
 }
 
@@ -831,6 +864,16 @@ function handleLaunchpadSceneSideCcRelease(port, d1, raw) {
       raw,
       cc,
       "Launchpad · stereo pan released (right column row 3)",
+    ]);
+    return true;
+  }
+  if (d1 === MINI_MK3_DISTORTION_CC && store.g4DistortionMenuHeld) {
+    setG4DistortionMenuHeld(false);
+    setMidiDebugLine([
+      port.slice(0, 56),
+      raw,
+      cc,
+      "Launchpad · distortion released (right column row 4)",
     ]);
     return true;
   }
@@ -902,9 +945,16 @@ function refreshLaunchpadMiniMk3PackNavLeds() {
           : store.g6StereoPanMenuHeld
             ? LP_SESSION_PALETTE.armed
             : MINI_MK3_STEREO_PAN_IDLE_LED;
+      const distortionLed =
+        !store.pack || store.pack.nCols <= 0
+          ? 0
+          : store.g4DistortionMenuHeld
+            ? LP_SESSION_PALETTE.armed
+            : MINI_MK3_DISTORTION_IDLE_LED;
       output.send(new Uint8Array([0xb0, MINI_MK3_CLIP_KIND_LEGEND_CC & 0x7f, kindTopLed]));
       output.send(new Uint8Array([0xb0, MINI_MK3_CLIP_TYPE_LEGEND_CC & 0x7f, typeSceneLed]));
       output.send(new Uint8Array([0xb0, MINI_MK3_STEREO_PAN_CC & 0x7f, stereoPanLed]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_DISTORTION_CC & 0x7f, distortionLed]));
     } catch (err) {
       console.warn("Launchpad Mini MK3 pack-nav LED (CC) failed:", name, err);
     }
@@ -1147,7 +1197,7 @@ function applyHStopModifierWebClasses() {
     const stopCol = store.hStopModifierPhysicalCols.has(dc);
     pad.classList.toggle("g-stop-col-active", stopCol);
     // Pan/volume menus own row-G labels (L1…L8 / mute col); do not overwrite after H-strip pointerup.
-    if (store.g6StereoPanMenuHeld || store.g7VolumeMenuHeld) continue;
+    if (store.g6StereoPanMenuHeld || store.g7VolumeMenuHeld || store.g4DistortionMenuHeld) continue;
     const defaultNm = pad.dataset.stripGNmDefault ?? "mute col";
     nm.textContent = stopCol ? "stop col" : defaultNm;
   }
@@ -1157,7 +1207,12 @@ function clearHStopModifierPhysicalCols() {
   if (store.hStopModifierPhysicalCols.size === 0) return;
   store.hStopModifierPhysicalCols.clear();
   applyHStopModifierWebClasses();
-  if (store.midiAccess && !store.g7VolumeMenuHeld && !store.g6StereoPanMenuHeld) {
+  if (
+    store.midiAccess &&
+    !store.g7VolumeMenuHeld &&
+    !store.g6StereoPanMenuHeld &&
+    !store.g4DistortionMenuHeld
+  ) {
     queueMicrotask(() => refreshLaunchpadStripRowHIdleHardware());
   }
 }
@@ -1167,7 +1222,12 @@ function setHStopModifierHeld(physicalCol, on) {
   if (on) store.hStopModifierPhysicalCols.add(physicalCol);
   else store.hStopModifierPhysicalCols.delete(physicalCol);
   applyHStopModifierWebClasses();
-  if (store.midiAccess && !store.g7VolumeMenuHeld && !store.g6StereoPanMenuHeld) {
+  if (
+    store.midiAccess &&
+    !store.g7VolumeMenuHeld &&
+    !store.g6StereoPanMenuHeld &&
+    !store.g4DistortionMenuHeld
+  ) {
     queueMicrotask(() => refreshLaunchpadStripRowHIdleHardware());
   }
 }
@@ -1502,6 +1562,7 @@ function setH8ClockStripMenuHeld(on) {
   if (store.h8ClockStripMenuHeld === on) return;
   if (on && store.g7VolumeMenuHeld) setG7VolumeMenuHeld(false);
   if (on && store.g6StereoPanMenuHeld) setG6StereoPanMenuHeld(false);
+  if (on && store.g4DistortionMenuHeld) setG4DistortionMenuHeld(false);
   if (on) clearHStopModifierPhysicalCols();
   store.h8ClockStripMenuHeld = on;
   if (dom.grid) dom.grid.classList.toggle("h8-clock-menu-active", on);
@@ -1785,9 +1846,13 @@ function updateG7VoiceGainForLoop(loopId) {
 }
 
 function wireStereoVoice(src, loopId, velN, loop) {
-  const voice = wireBufferSourceWithStereoPan(store.audioCtx, src, connectVoiceToMaster);
+  const voice = attachDistortionToVoice(
+    store.audioCtx,
+    wireBufferSourceWithStereoPan(store.audioCtx, src, connectVoiceToMaster),
+  );
   voice.gainVelNorm = velN;
   applyVoiceGainLevels(voice, loopId, loop);
+  applyClipDistortionToVoice(voice, getClipDistortionParams(loopId));
   return voice;
 }
 
@@ -1918,9 +1983,385 @@ function refreshLaunchpadG7HStripHardware() {
   }
 }
 
+function getClipDistortionParams(loopId) {
+  if (loopId == null) return defaultClipDistortionParams();
+  const sid = String(loopId);
+  if (store.g4ClipDistortionByLoopId.has(sid)) {
+    return { ...defaultClipDistortionParams(), ...store.g4ClipDistortionByLoopId.get(sid) };
+  }
+  const n = Number(loopId);
+  if (Number.isFinite(n) && store.g4ClipDistortionByLoopId.has(n)) {
+    return { ...defaultClipDistortionParams(), ...store.g4ClipDistortionByLoopId.get(n) };
+  }
+  return defaultClipDistortionParams();
+}
+
+function setClipDistortionParams(loopId, partial) {
+  const cur = getClipDistortionParams(loopId);
+  const next = {
+    drive: Math.max(1, Math.min(8, Math.floor(Number(partial.drive ?? cur.drive)) || 1)),
+    oversample: /** @type {0|1|2} */ (
+      Math.max(0, Math.min(2, Math.floor(Number(partial.oversample ?? cur.oversample)) || 0))
+    ),
+    softClip: partial.softClip != null ? Boolean(partial.softClip) : cur.softClip,
+    tone: Math.max(0, Math.min(4, Math.floor(Number(partial.tone ?? cur.tone)) || 0)),
+  };
+  store.g4ClipDistortionByLoopId.set(String(loopId), next);
+  if (Number.isFinite(Number(loopId))) store.g4ClipDistortionByLoopId.set(Number(loopId), next);
+}
+
+function updateG4VoiceDistortionForLoop(loopId) {
+  if (!store.pack || loopId == null) return;
+  const params = getClipDistortionParams(loopId);
+  const sid = String(loopId);
+  let playing = store.activeLoops.get(loopId);
+  if (!playing && Number.isFinite(Number(loopId))) playing = store.activeLoops.get(Number(loopId));
+  if (!playing) playing = store.activeLoops.get(sid);
+  if (playing) applyClipDistortionToVoice(playing, params);
+  const os = getActiveOneShot(loopId);
+  if (os) applyClipDistortionToVoice(os, params);
+}
+
+function soleG4SelectedClipLoopId() {
+  if (store.g4SelectedClipLoopIds.size !== 1) return null;
+  return [...store.g4SelectedClipLoopIds][0];
+}
+
+function allG4SelectedClipsHaveDrive(step) {
+  if (store.g4SelectedClipLoopIds.size === 0) return false;
+  for (const id of store.g4SelectedClipLoopIds) {
+    if (getClipDistortionParams(id).drive !== step) return false;
+  }
+  return true;
+}
+
+function clipDistortionDriveLabel(step) {
+  const n = Math.max(1, Math.min(8, Math.floor(Number(step)) || 1));
+  return `D${n}`;
+}
+
+function refreshClipDistortionLevelBadges() {
+  if (!dom.grid) return;
+  for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
+    const lid = el.dataset.loopId;
+    if (!lid) continue;
+    const p = getClipDistortionParams(lid);
+    let badge = el.querySelector(".dist-lvl");
+    if (p.drive <= 1 && p.tone <= 0 && p.oversample === 0) {
+      badge?.remove();
+      continue;
+    }
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "dist-lvl";
+      badge.setAttribute("aria-hidden", "true");
+      const vol = el.querySelector(".vol-lvl");
+      if (vol) vol.before(badge);
+      else el.append(badge);
+    }
+    const os = p.oversample === 1 ? "2×" : p.oversample === 2 ? "4×" : "";
+    const clip = p.softClip ? "S" : "H";
+    const tone = p.tone > 0 ? `T${p.tone}` : "";
+    badge.textContent = [clipDistortionDriveLabel(p.drive), os, clip, tone].filter(Boolean).join(" ");
+    badge.title = `Distortion drive ${p.drive}/8 · ${os || "no OS"} · ${p.softClip ? "soft" : "hard"} clip · tone ${p.tone}/4`;
+  }
+}
+
+function applyG4DistortionDriveStep(step) {
+  const s = Math.max(1, Math.min(8, Math.floor(Number(step)) || 1));
+  store.g4DistortionDriveStepSelection = s;
+  if (store.g4SelectedClipLoopIds.size > 0) {
+    for (const id of store.g4SelectedClipLoopIds) {
+      setClipDistortionParams(id, { drive: s });
+      updateG4VoiceDistortionForLoop(id);
+    }
+    if (store.g4SelectedClipLoopIds.size === 1) store.g4DistortionDriveStepSelection = null;
+  }
+  applyG4DistortionMenuWebClasses();
+  refreshClipDistortionLevelBadges();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadG4DistortionStripHardware();
+    });
+  }
+}
+
+function applyG4DistortionOversampleIndex(idx) {
+  const os = /** @type {0|1|2} */ (Math.max(0, Math.min(2, Math.floor(Number(idx)) || 0));
+  if (store.g4SelectedClipLoopIds.size > 0) {
+    for (const id of store.g4SelectedClipLoopIds) {
+      setClipDistortionParams(id, { oversample: os });
+      updateG4VoiceDistortionForLoop(id);
+    }
+  }
+  applyG4DistortionMenuWebClasses();
+  refreshClipDistortionLevelBadges();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadG4DistortionStripHardware();
+    });
+  }
+}
+
+function toggleG4DistortionSoftClipOnSelection() {
+  if (store.g4SelectedClipLoopIds.size === 0) {
+    store.g4DistortionSoftClipPending = !store.g4DistortionSoftClipPending;
+    applyG4DistortionMenuWebClasses();
+    if (store.midiAccess) queueMicrotask(() => refreshLaunchpadG4DistortionStripHardware());
+    return;
+  }
+  const first = getClipDistortionParams([...store.g4SelectedClipLoopIds][0]);
+  const next = !first.softClip;
+  for (const id of store.g4SelectedClipLoopIds) {
+    setClipDistortionParams(id, { softClip: next });
+    updateG4VoiceDistortionForLoop(id);
+  }
+  applyG4DistortionMenuWebClasses();
+  refreshClipDistortionLevelBadges();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadG4DistortionStripHardware();
+    });
+  }
+}
+
+function applyG4DistortionToneLevel(level) {
+  const t = Math.max(0, Math.min(4, Math.floor(Number(level)) || 0));
+  if (store.g4SelectedClipLoopIds.size > 0) {
+    for (const id of store.g4SelectedClipLoopIds) {
+      setClipDistortionParams(id, { tone: t });
+      updateG4VoiceDistortionForLoop(id);
+    }
+  }
+  applyG4DistortionMenuWebClasses();
+  refreshClipDistortionLevelBadges();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadG4DistortionStripHardware();
+    });
+  }
+}
+
+function toggleG4ClipLoopSelection(loopId) {
+  const sid = String(loopId);
+  if (store.g4SelectedClipLoopIds.has(sid)) store.g4SelectedClipLoopIds.delete(sid);
+  else {
+    if (store.g4SelectedClipLoopIds.size === 0 && store.g4DistortionDriveStepSelection != null) {
+      store.g4DistortionDriveStepSelection = null;
+    }
+    store.g4SelectedClipLoopIds.add(sid);
+  }
+  if (store.g4SelectedClipLoopIds.size === 1) store.g4DistortionDriveStepSelection = null;
+  applyG4DistortionMenuWebClasses();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadG4DistortionStripHardware();
+    });
+  }
+}
+
+function applyG4DistortionMenuWebClasses() {
+  if (!dom.grid) return;
+  syncSidePanelLegendsWeb();
+  const soleId = soleG4SelectedClipLoopId();
+  const soleDrive = soleId != null ? getClipDistortionParams(soleId).drive : null;
+  for (const pad of dom.grid.querySelectorAll('button.pad.utility[data-utility-row="6"]')) {
+    if (pad.dataset.g8VolumeHoldStrip === "true") continue;
+    const dc = Number(pad.dataset.displayCol);
+    const nm = pad.querySelector(".nm");
+    if (nm && Number.isFinite(dc)) {
+      if (store.g4DistortionMenuHeld) nm.textContent = `${dc + 1}/8`;
+      else if (pad.dataset.stripGNmDefault != null) nm.textContent = pad.dataset.stripGNmDefault;
+    }
+    pad.classList.toggle("g4-g-drive-strip", store.g4DistortionMenuHeld);
+    pad.classList.remove("g4-g-strip-step-apply", "g4-g-strip-step-query", "g4-g-strip-step-current");
+    if (!store.g4DistortionMenuHeld || !Number.isFinite(dc)) continue;
+    const step = dc + 1;
+    const stepOnPad =
+      store.g4DistortionDriveStepSelection != null && store.g4DistortionDriveStepSelection === step;
+    const isCurrent = !stepOnPad && allG4SelectedClipsHaveDrive(step);
+    pad.classList.toggle("g4-g-strip-step-apply", stepOnPad && store.g4SelectedClipLoopIds.size > 0);
+    pad.classList.toggle("g4-g-strip-step-query", stepOnPad && store.g4SelectedClipLoopIds.size === 0);
+    pad.classList.toggle("g4-g-strip-step-current", isCurrent);
+    if (nm && isCurrent) nm.textContent = `${step}/8 ·`;
+  }
+  for (const pad of dom.grid.querySelectorAll('button.pad.utility[data-utility-row="7"]')) {
+    const dc = Number(pad.dataset.displayCol);
+    const nm = pad.querySelector(".nm");
+    const isH8 = pad.dataset.h8ClockMenuStrip === "true";
+    if (!store.g4DistortionMenuHeld || !Number.isFinite(dc)) {
+      pad.classList.remove(
+        "g4-h-os-strip",
+        "g4-h-clip-strip",
+        "g4-h-tone-strip",
+        "g4-h-strip-lit",
+      );
+      continue;
+    }
+    pad.classList.add("g4-h-os-strip", "g4-h-clip-strip", "g4-h-tone-strip");
+    const sole = soleId != null ? getClipDistortionParams(soleId) : null;
+    let lit = false;
+    if (dc <= 2) {
+      if (nm) nm.textContent = dc === 0 ? "OS·" : dc === 1 ? "2×" : "4×";
+      lit = sole != null && sole.oversample === dc;
+    } else if (dc === 3) {
+      const soft =
+        sole != null
+          ? sole.softClip
+          : store.g4DistortionSoftClipPending;
+      if (nm) nm.textContent = soft === false ? "hard" : "soft";
+      lit =
+        sole != null
+          ? store.g4SelectedClipLoopIds.size > 0 &&
+            [...store.g4SelectedClipLoopIds].every(
+              (id) => getClipDistortionParams(id).softClip === sole.softClip,
+            )
+          : true;
+    } else if (dc >= 4 && dc <= 7) {
+      const tone = dc - 3;
+      if (nm) nm.textContent = `T${tone}`;
+      lit = sole != null && sole.tone === tone;
+    } else if (isH8 && nm) {
+      nm.textContent = "T4";
+      lit = sole != null && sole.tone === 4;
+    }
+    pad.classList.toggle("g4-h-strip-lit", lit);
+  }
+  for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
+    const lid = el.dataset.loopId;
+    if (!lid) continue;
+    el.classList.toggle("g4-clip-selected", store.g4DistortionMenuHeld && store.g4SelectedClipLoopIds.has(lid));
+    const d = getClipDistortionParams(lid).drive;
+    el.classList.toggle(
+      "g4-clip-drive-match",
+      store.g4DistortionMenuHeld &&
+        store.g4DistortionDriveStepSelection != null &&
+        store.g4SelectedClipLoopIds.size === 0 &&
+        d === store.g4DistortionDriveStepSelection,
+    );
+  }
+}
+
+function clearG4DistortionMenuWebClasses() {
+  if (!dom.grid) return;
+  dom.grid.classList.remove("g4-distortion-menu-active");
+  for (const pad of dom.grid.querySelectorAll("button.pad.utility")) {
+    pad.classList.remove(
+      "g4-g-drive-strip",
+      "g4-g-strip-step-apply",
+      "g4-g-strip-step-query",
+      "g4-g-strip-step-current",
+      "g4-h-os-strip",
+      "g4-h-clip-strip",
+      "g4-h-tone-strip",
+      "g4-h-strip-lit",
+    );
+  }
+  for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
+    el.classList.remove("g4-clip-selected", "g4-clip-drive-match");
+  }
+}
+
+function refreshLaunchpadG4DistortionStripHardware() {
+  if (!store.midiAccess || !store.pack || !store.g4DistortionMenuHeld) return;
+  const soleDrive =
+    store.g4SelectedClipLoopIds.size === 1
+      ? getClipDistortionParams(soleG4SelectedClipLoopId()).drive
+      : null;
+  const sole = soleG4SelectedClipLoopId() != null ? getClipDistortionParams(soleG4SelectedClipLoopId()) : null;
+  for (let dc = 0; dc < 8; dc += 1) {
+    const pkG = padKeyFromPhysicalCell(dc, 6);
+    let vG = LP_SESSION_G4_DISTORTION_MENU.stripRowG;
+    const stepG = dc + 1;
+    if (store.g4DistortionDriveStepSelection != null && store.g4DistortionDriveStepSelection === stepG) {
+      vG =
+        store.g4SelectedClipLoopIds.size > 0
+          ? LP_SESSION_G4_DISTORTION_MENU.stripStepApplyYellow
+          : LP_SESSION_G4_DISTORTION_MENU.stripStepQueryPurple;
+    } else if (soleDrive != null && soleDrive === stepG) {
+      vG = LP_SESSION_G4_DISTORTION_MENU.stripStepCurrentG;
+    }
+    sendSessionPadLightingRowG(pkG, vG);
+    const pkH = padKeyFromPhysicalCell(dc, 7);
+    let vH = LP_SESSION_G4_DISTORTION_MENU.stripRowH;
+    if (dc <= 2 && sole != null && sole.oversample === dc) {
+      vH = [LP_SESSION_G4_DISTORTION_MENU.stripH1, LP_SESSION_G4_DISTORTION_MENU.stripH2, LP_SESSION_G4_DISTORTION_MENU.stripH3][dc];
+    } else if (dc === 3) {
+      const soft = sole != null ? sole.softClip : store.g4DistortionSoftClipPending;
+      vH = soft ? LP_SESSION_G4_DISTORTION_MENU.stripH4 : LP_SESSION_PALETTE.playing;
+    } else if (dc >= 4 && dc <= 7 && sole != null && sole.tone === dc - 3) {
+      vH = LP_SESSION_G4_DISTORTION_MENU.stripTone[dc - 4];
+    } else if (dc === 7 && sole != null && sole.tone === 4) {
+      vH = LP_SESSION_G4_DISTORTION_MENU.stripTone[3];
+    }
+    sendSessionPadLightingRowH(pkH, vH);
+  }
+}
+
+function toggleG4DistortionMenuLatch() {
+  const next = !store.g4DistortionMenuLatched;
+  store.g4DistortionMenuLatched = next;
+  setG4DistortionMenuHeld(next);
+}
+
+function releaseG4DistortionMenuPointer() {
+  if (!store.g4DistortionMenuLatched) setG4DistortionMenuHeld(false);
+}
+
+function setG4DistortionMenuHeld(on) {
+  if (!on) store.g4DistortionMenuLatched = false;
+  if (store.g4DistortionMenuHeld === on) return;
+  if (on) {
+    if (store.g7VolumeMenuHeld) setG7VolumeMenuHeld(false);
+    if (store.g6StereoPanMenuHeld) setG6StereoPanMenuHeld(false);
+    if (store.h8ClockStripMenuHeld) setH8ClockStripMenuHeld(false);
+    clearHStopModifierPhysicalCols();
+    if (store.clipKindLegendHeld) endClipKindLegendHold();
+    if (store.clipTypeLegendHeld) endClipTypeLegendHold();
+  }
+  store.g4DistortionMenuHeld = on;
+  if (dom.grid) dom.grid.classList.toggle("g4-distortion-menu-active", on);
+  if (on) {
+    applyG4DistortionMenuWebClasses();
+    if (store.midiAccess) {
+      queueMicrotask(() => {
+        refreshLaunchpadMiniMk3PackNavLeds();
+        refreshLaunchpadSessionClipPadsHardwareOnly();
+        refreshLaunchpadG4DistortionStripHardware();
+      });
+    }
+  } else {
+    store.g4DistortionDriveStepSelection = null;
+    store.g4SelectedClipLoopIds.clear();
+    store.g4DistortionSoftClipPending = true;
+    clearG4DistortionMenuWebClasses();
+    if (store.midiAccess) {
+      queueMicrotask(() => {
+        refreshLaunchpadMiniMk3PackNavLeds();
+        refreshAllLaunchpadClipLeds();
+        refreshLaunchpadSyncClockRowG(syncClockTickDisplayColumn8());
+        refreshLaunchpadStripRowHIdleHardware();
+      });
+    }
+  }
+}
+
 /** Restore row **H** strip pad LEDs (`1H`…`8H`) after **8G** volume menu — clock refresh only updated **8H** before. */
 function refreshLaunchpadStripRowHIdleHardware() {
-  if (!store.midiAccess || !store.pack || store.g7VolumeMenuHeld || store.g6StereoPanMenuHeld) return;
+  if (
+    !store.midiAccess ||
+    !store.pack ||
+    store.g7VolumeMenuHeld ||
+    store.g6StereoPanMenuHeld ||
+    store.g4DistortionMenuHeld
+  ) {
+    return;
+  }
   for (let dc = 0; dc < 8; dc += 1) {
     const pk = padKeyFromPhysicalCell(dc, 7);
     let v = isStripMuteStopInertAtPhysicalCol(dc) ? LP_SESSION_G_SYNC.col8Inert : LP_SESSION_STRIP_H_IDLE;
@@ -2063,6 +2504,15 @@ function syncSidePanelLegendsWeb() {
     panBtn.classList.toggle("side-panel-stereo-idle", !store.g6StereoPanMenuHeld && !!store.pack);
     panBtn.setAttribute("aria-pressed", store.g6StereoPanMenuHeld ? "true" : "false");
   }
+  const distBtn = dom.grid.querySelector('button.pad.side-panel[data-side-panel-distortion="true"]');
+  if (distBtn) {
+    const nm = distBtn.querySelector(".nm");
+    const label = distBtn.dataset.sidePanelNmDefault ?? "dist";
+    if (nm) nm.textContent = store.g4DistortionMenuHeld ? `${label} ·` : label;
+    distBtn.classList.toggle("g4-distortion-menu-held", store.g4DistortionMenuHeld);
+    distBtn.classList.toggle("side-panel-distortion-idle", !store.g4DistortionMenuHeld && !!store.pack);
+    distBtn.setAttribute("aria-pressed", store.g4DistortionMenuHeld ? "true" : "false");
+  }
 }
 
 const WEB_MENU_HOLD_MS = 350;
@@ -2179,6 +2629,18 @@ function appendSidePanelPad(rowIdx, rowLetter) {
       onPress: () => setG6StereoPanMenuHeld(true),
       onRelease: () => releaseG6StereoPanMenuPointer(),
       onToggleLatch: () => toggleG6StereoPanMenuLatch(),
+    });
+  } else if (rowIdx === SIDE_PANEL_DISTORTION_ROW_IDX) {
+    side.dataset.sidePanelDistortion = "true";
+    nm.textContent = "dist";
+    side.dataset.sidePanelNmDefault = "dist";
+    side.title =
+      "Hold or click to lock: distortion (Launchpad scene row 4 / CC 59). Select clips 1A…8F. Row G = drive 1…8; row H: H1–H3 oversample, H4 soft/hard clip, H5–H8 tone filter.";
+    side.classList.add("side-panel-distortion-idle");
+    wireWebMenuHoldPad(side, {
+      onPress: () => setG4DistortionMenuHeld(true),
+      onRelease: () => releaseG4DistortionMenuPointer(),
+      onToggleLatch: () => toggleG4DistortionMenuLatch(),
     });
   } else {
     side.disabled = true;
@@ -2370,6 +2832,7 @@ function setG6StereoPanMenuHeld(on) {
   if (store.g6StereoPanMenuHeld === on) return;
   if (on) {
     if (store.g7VolumeMenuHeld) setG7VolumeMenuHeld(false);
+    if (store.g4DistortionMenuHeld) setG4DistortionMenuHeld(false);
     if (store.h8ClockStripMenuHeld) setH8ClockStripMenuHeld(false);
     clearHStopModifierPhysicalCols();
   }
@@ -2407,6 +2870,7 @@ function setG7VolumeMenuHeld(on) {
   if (store.g7VolumeMenuHeld === on) return;
   if (on) {
     if (store.g6StereoPanMenuHeld) setG6StereoPanMenuHeld(false);
+    if (store.g4DistortionMenuHeld) setG4DistortionMenuHeld(false);
     if (store.h8ClockStripMenuHeld) setH8ClockStripMenuHeld(false);
   }
   if (on) clearHStopModifierPhysicalCols();
@@ -2512,6 +2976,11 @@ function syncClockTickDisplayColumn8() {
 
 function refreshLaunchpadSyncClockRowG(tickDisplayCol) {
   if (!store.midiAccess) return;
+  if (store.g4DistortionMenuHeld) {
+    refreshLaunchpadG4DistortionStripHardware();
+    refreshLaunchpadSessionClipPadsHardwareOnly();
+    return;
+  }
   if (store.g6StereoPanMenuHeld) {
     refreshLaunchpadG6StereoStripHardware();
     refreshLaunchpadSessionClipPadsHardwareOnly();
@@ -2530,11 +2999,12 @@ function refreshLaunchpadSyncClockRowG(tickDisplayCol) {
   refreshLaunchpadSessionClipPadsHardwareOnly();
   if (store.h8ClockStripMenuHeld) refreshLaunchpadCol8ClockTickMenuOverlay();
   if (store.g7VolumeMenuHeld) refreshLaunchpadG7HStripHardware();
+  else if (store.g4DistortionMenuHeld) refreshLaunchpadG4DistortionStripHardware();
   else refreshLaunchpadStripRowHIdleHardware();
 }
 
 function updateWebSyncClockRowG(tickCol) {
-  if (!dom.grid || store.g6StereoPanMenuHeld) return;
+  if (!dom.grid || store.g6StereoPanMenuHeld || store.g4DistortionMenuHeld) return;
   const pads = dom.grid.querySelectorAll('button.pad.utility[data-utility-row="6"]');
   for (const pad of pads) {
     const dc = Number(pad.dataset.displayCol);
@@ -3224,6 +3694,7 @@ function stopAllLoops() {
   setH8ClockStripMenuHeld(false);
   setG7VolumeMenuHeld(false);
   setG6StereoPanMenuHeld(false);
+  setG4DistortionMenuHeld(false);
   for (const [id, tid] of [...store.pendingLoopStartTimers.entries()]) {
     clearTimeout(tid);
     setPadArmed(id, false);
@@ -3297,9 +3768,11 @@ function syncPlaybackPadClasses() {
   if (store.h8ClockStripMenuHeld) applyH8ClockStripMenuWebClasses();
   if (store.g7VolumeMenuHeld) applyG7VolumeMenuWebClasses();
   if (store.g6StereoPanMenuHeld) applyG6StereoPanMenuWebClasses();
+  if (store.g4DistortionMenuHeld) applyG4DistortionMenuWebClasses();
   if (store.clipKindLegendHeld || store.clipTypeLegendHeld) syncClipLegendWebStyling();
   refreshClipVolumeLevelBadges();
   refreshClipPanBars();
+  refreshClipDistortionLevelBadges();
   refreshClipChannelBadges();
 }
 
@@ -3308,6 +3781,7 @@ function renderGrid(packState) {
   if (!dom.grid || !dom.cols || !packState) return;
   setG7VolumeMenuHeld(false);
   setG6StereoPanMenuHeld(false);
+  setG4DistortionMenuHeld(false);
   setH8ClockStripMenuHeld(false);
   dom.grid.innerHTML = "";
   dom.cols.innerHTML = buildColLabelsHtml(packState);
@@ -3364,6 +3838,10 @@ function renderGrid(packState) {
             "Hold or click to lock volume — row H shows 1/8…8/8 (8H = max). Tap clips 1A…8F to select. Click volume again to exit. One clip: H shows its level (blue). Several: tap H (yellow) to set.";
           wireWebMenuHoldPad(pad, {
             onPress: () => {
+              if (store.g4DistortionMenuHeld) {
+                applyG4DistortionDriveStep(8);
+                return;
+              }
               if (store.g6StereoPanMenuHeld) {
                 applyG6LeftPanStep(8);
                 return;
@@ -3371,10 +3849,14 @@ function renderGrid(packState) {
               setG7VolumeMenuHeld(true);
             },
             onRelease: () => {
-              if (store.g6StereoPanMenuHeld) return;
+              if (store.g6StereoPanMenuHeld || store.g4DistortionMenuHeld) return;
               releaseG7VolumeMenuPointer();
             },
             onToggleLatch: () => {
+              if (store.g4DistortionMenuHeld) {
+                applyG4DistortionDriveStep(8);
+                return;
+              }
               if (store.g6StereoPanMenuHeld) {
                 applyG6LeftPanStep(8);
                 return;
@@ -3390,6 +3872,10 @@ function renderGrid(packState) {
             "While volume menu is active (hold/lock volume on 8G): 8/8 max level. While pan menu is active: R8. Otherwise hold or click to lock clock tick sync — pick ticks with 8A…8F (same as Clock sync above). Click again to exit.";
           wireWebMenuHoldPad(pad, {
             onPress: () => {
+              if (store.g4DistortionMenuHeld) {
+                applyG4DistortionToneLevel(4);
+                return;
+              }
               if (store.g6StereoPanMenuHeld) {
                 applyG6RightPanStep(8);
                 return;
@@ -3401,10 +3887,14 @@ function renderGrid(packState) {
               setH8ClockStripMenuHeld(true);
             },
             onRelease: () => {
-              if (store.g6StereoPanMenuHeld || store.g7VolumeMenuHeld) return;
+              if (store.g6StereoPanMenuHeld || store.g7VolumeMenuHeld || store.g4DistortionMenuHeld) return;
               releaseH8ClockStripMenuPointer();
             },
             onToggleLatch: () => {
+              if (store.g4DistortionMenuHeld) {
+                applyG4DistortionToneLevel(4);
+                return;
+              }
               if (store.g6StereoPanMenuHeld) {
                 applyG6RightPanStep(8);
                 return;
@@ -3441,6 +3931,11 @@ function renderGrid(packState) {
           };
           pad.addEventListener("pointerdown", async (ev) => {
             ev.preventDefault();
+            if (store.g4DistortionMenuHeld) {
+              ev.stopPropagation();
+              applyG4DistortionDriveStep(dc + 1);
+              return;
+            }
             if (store.g6StereoPanMenuHeld) {
               ev.stopPropagation();
               applyG6LeftPanStep(panStepFromStripCol(dc));
@@ -3460,7 +3955,7 @@ function renderGrid(packState) {
             muteColumnOn(logicalCol, dc);
           });
           pad.addEventListener("pointerup", (ev) => {
-            if (store.g6StereoPanMenuHeld) return;
+            if (store.g6StereoPanMenuHeld || store.g4DistortionMenuHeld) return;
             unmuteStrip();
             try {
               pad.releasePointerCapture(ev.pointerId);
@@ -3469,11 +3964,11 @@ function renderGrid(packState) {
             }
           });
           pad.addEventListener("pointercancel", (ev) => {
-            if (store.g6StereoPanMenuHeld) return;
+            if (store.g6StereoPanMenuHeld || store.g4DistortionMenuHeld) return;
             unmuteStrip();
           });
           pad.addEventListener("lostpointercapture", (ev) => {
-            if (store.g6StereoPanMenuHeld) return;
+            if (store.g6StereoPanMenuHeld || store.g4DistortionMenuHeld) return;
             unmuteStrip();
           });
           pad.addEventListener("click", (ev) => {
@@ -3483,6 +3978,14 @@ function renderGrid(packState) {
         } else {
           const releaseHStopModifier = () => setHStopModifierHeld(dc, false);
           pad.addEventListener("pointerdown", async (ev) => {
+            if (store.g4DistortionMenuHeld) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              if (dc <= 2) applyG4DistortionOversampleIndex(dc);
+              else if (dc === 3) toggleG4DistortionSoftClipOnSelection();
+              else if (dc >= 4 && dc <= 7) applyG4DistortionToneLevel(dc - 3);
+              return;
+            }
             if (store.g6StereoPanMenuHeld) {
               ev.preventDefault();
               ev.stopPropagation();
@@ -3506,7 +4009,9 @@ function renderGrid(packState) {
             if (store.audioCtx.state === "suspended") await store.audioCtx.resume();
           });
           pad.addEventListener("pointerup", (ev) => {
-            if (!store.g6StereoPanMenuHeld && !store.g7VolumeMenuHeld) releaseHStopModifier();
+            if (!store.g6StereoPanMenuHeld && !store.g7VolumeMenuHeld && !store.g4DistortionMenuHeld) {
+              releaseHStopModifier();
+            }
             try {
               pad.releasePointerCapture(ev.pointerId);
             } catch {
@@ -3514,10 +4019,14 @@ function renderGrid(packState) {
             }
           });
           pad.addEventListener("pointercancel", (ev) => {
-            if (!store.g6StereoPanMenuHeld && !store.g7VolumeMenuHeld) releaseHStopModifier();
+            if (!store.g6StereoPanMenuHeld && !store.g7VolumeMenuHeld && !store.g4DistortionMenuHeld) {
+              releaseHStopModifier();
+            }
           });
           pad.addEventListener("lostpointercapture", (ev) => {
-            if (!store.g6StereoPanMenuHeld && !store.g7VolumeMenuHeld) releaseHStopModifier();
+            if (!store.g6StereoPanMenuHeld && !store.g7VolumeMenuHeld && !store.g4DistortionMenuHeld) {
+              releaseHStopModifier();
+            }
           });
           pad.addEventListener("click", (ev) => {
             ev.preventDefault();
@@ -3618,6 +4127,13 @@ function renderGrid(packState) {
               }
               return;
             }
+            if (store.g4DistortionMenuHeld) {
+              if (isG7ClipMultiSelectSessionPadKey(pk)) {
+                const lid = getLoopIdForSessionClipPadOrScan(pk);
+                if (lid != null) toggleG4ClipLoopSelection(lid);
+              }
+              return;
+            }
             if (store.g6StereoPanMenuHeld) {
               if (isG7ClipMultiSelectSessionPadKey(pk)) {
                 const lid = getLoopIdForSessionClipPadOrScan(pk);
@@ -3657,6 +4173,14 @@ function renderGrid(packState) {
           });
         } else {
           pad.addEventListener("pointerdown", (ev) => {
+            if (store.g4DistortionMenuHeld && isG7ClipMultiSelectSessionPadKey(pk)) {
+              const lid = getLoopIdForSessionClipPadOrScan(pk);
+              if (lid == null) return;
+              ev.preventDefault();
+              ev.stopPropagation();
+              toggleG4ClipLoopSelection(lid);
+              return;
+            }
             if (store.g6StereoPanMenuHeld && isG7ClipMultiSelectSessionPadKey(pk)) {
               const lid = getLoopIdForSessionClipPadOrScan(pk);
               if (lid == null) return;
@@ -3673,7 +4197,7 @@ function renderGrid(packState) {
             toggleG7ClipLoopSelection(lid);
           });
           pad.addEventListener("click", async (ev) => {
-            if (store.g6StereoPanMenuHeld || store.g7VolumeMenuHeld) {
+            if (store.g6StereoPanMenuHeld || store.g7VolumeMenuHeld || store.g4DistortionMenuHeld) {
               ev.preventDefault();
               ev.stopPropagation();
               return;
@@ -3908,14 +4432,25 @@ function handleMidiMessage(ev) {
       const rp = rPad ? parsePadKey(rPad) : null;
       if (rp && rp.rowIdx === 6) {
         if (rPad === "8G") {
-          if (!store.g6StereoPanMenuHeld) setG7VolumeMenuHeld(false);
+          if (!store.g6StereoPanMenuHeld && !store.g4DistortionMenuHeld) setG7VolumeMenuHeld(false);
           setMidiDebugLine([
             port.slice(0, 56),
             raw,
             rPad,
-            store.g6StereoPanMenuHeld
-              ? "strip G8 · note off ignored during stereo pan menu"
-              : "strip 8G · volume menu released (column 8 strip is volume UI, not mute)",
+            store.g4DistortionMenuHeld
+              ? "strip G8 · note off ignored during distortion menu"
+              : store.g6StereoPanMenuHeld
+                ? "strip G8 · note off ignored during stereo pan menu"
+                : "strip 8G · volume menu released (column 8 strip is volume UI, not mute)",
+          ]);
+          return;
+        }
+        if (store.g4DistortionMenuHeld) {
+          setMidiDebugLine([
+            port.slice(0, 56),
+            raw,
+            rPad,
+            "strip G · note off ignored during distortion menu",
           ]);
           return;
         }
@@ -3949,6 +4484,15 @@ function handleMidiMessage(ev) {
         return;
       }
       if (rp && rp.rowIdx === 7) {
+        if (store.g4DistortionMenuHeld) {
+          setMidiDebugLine([
+            port.slice(0, 56),
+            raw,
+            rPad,
+            "strip H · note off ignored during distortion menu",
+          ]);
+          return;
+        }
         if (store.g6StereoPanMenuHeld) {
           setMidiDebugLine([
             port.slice(0, 56),
@@ -4095,6 +4639,17 @@ function handleMidiMessage(ev) {
     isStripMuteStopInertAtPhysicalCol(parsed.col) &&
     (parsed.rowIdx === 6 || parsed.rowIdx === 7)
   ) {
+    if (store.g4DistortionMenuHeld) {
+      if (parsed.rowIdx === 6) applyG4DistortionDriveStep(8);
+      else applyG4DistortionToneLevel(4);
+      setMidiDebugLine([
+        port.slice(0, 56),
+        raw,
+        padKey,
+        parsed.rowIdx === 6 ? "strip G8 · distortion drive 8/8" : "strip H8 · distortion tone T4",
+      ]);
+      return;
+    }
     if (store.g6StereoPanMenuHeld) {
       if (parsed.rowIdx === 6) applyG6LeftPanStep(8);
       else applyG6RightPanStep(8);
@@ -4139,6 +4694,19 @@ function handleMidiMessage(ev) {
   }
 
   const clipCell = padKeyToSessionCell(padKey, store.pack.nRows);
+  if (clipCell && store.g4DistortionMenuHeld && vel > 0) {
+    if (isG7ClipMultiSelectSessionPadKey(padKey)) {
+      const selLoopId = getLoopIdForSessionClipPadOrScan(padKey);
+      if (selLoopId != null) toggleG4ClipLoopSelection(selLoopId);
+    }
+    setMidiDebugLine([
+      port.slice(0, 56),
+      raw,
+      padKey,
+      "distortion menu · clip pad (toggle selection 1A…8F)",
+    ]);
+    return;
+  }
   if (clipCell && store.g6StereoPanMenuHeld && vel > 0) {
     if (isG7ClipMultiSelectSessionPadKey(padKey)) {
       const selLoopId = getLoopIdForSessionClipPadOrScan(padKey);
@@ -4169,6 +4737,39 @@ function handleMidiMessage(ev) {
   }
 
   if (!clipCell && (parsed.rowIdx === 6 || parsed.rowIdx === 7)) {
+    if (parsed.rowIdx === 6 && store.g4DistortionMenuHeld && vel > 0) {
+      applyG4DistortionDriveStep(parsed.col + 1);
+      setMidiDebugLine([
+        port.slice(0, 56),
+        raw,
+        padKey,
+        `strip G · distortion drive ${parsed.col + 1}/8`,
+      ]);
+      return;
+    }
+    if (parsed.rowIdx === 7 && store.g4DistortionMenuHeld && vel > 0) {
+      if (parsed.col <= 2) {
+        applyG4DistortionOversampleIndex(parsed.col);
+        setMidiDebugLine([
+          port.slice(0, 56),
+          raw,
+          padKey,
+          `strip H · oversample ${parsed.col === 0 ? "none" : parsed.col === 1 ? "2×" : "4×"}`,
+        ]);
+      } else if (parsed.col === 3) {
+        toggleG4DistortionSoftClipOnSelection();
+        setMidiDebugLine([port.slice(0, 56), raw, padKey, "strip H4 · soft/hard clip toggle"]);
+      } else if (parsed.col >= 4 && parsed.col <= 7) {
+        applyG4DistortionToneLevel(parsed.col - 3);
+        setMidiDebugLine([
+          port.slice(0, 56),
+          raw,
+          padKey,
+          `strip H · tone filter T${parsed.col - 3}`,
+        ]);
+      }
+      return;
+    }
     if (parsed.rowIdx === 6 && store.g6StereoPanMenuHeld && vel > 0) {
       applyG6LeftPanStep(panStepFromStripCol(parsed.col));
       setMidiDebugLine([

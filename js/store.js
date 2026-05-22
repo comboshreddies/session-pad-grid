@@ -64,6 +64,17 @@ export const store = {
   /** Right pan step 0…8; left = 8 − right. */
   g6ClipRightPanStepByLoopId: new Map(),
 
+  /** Hold scene row 4 / CC **59** (web side panel **D**): distortion on selected clips **1A…8F**. */
+  g4DistortionMenuHeld: false,
+  g4DistortionMenuLatched: false,
+  /** Drive step 1…8 chosen on row **G** before applying to clips. */
+  g4DistortionDriveStepSelection: /** @type {number|null} */ (null),
+  g4SelectedClipLoopIds: new Set(),
+  /** Default soft clip for next assignments when H4 is toggled with no clips selected. */
+  g4DistortionSoftClipPending: true,
+  /** @type {Map<string, import('./playback-distortion.js').ClipDistortionParams>} */
+  g4ClipDistortionByLoopId: new Map(),
+
   clipKindLegendHeld: false,
   clipKindLegendLatched: false,
   clipKindLegendVelocityByKey: new Map(),
