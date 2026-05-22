@@ -90,12 +90,20 @@ import { restoreSettingsFromLocalStorage } from "./init-settings.js";
 
 /** Hold **H8** to choose **Clock sync** via **8A…8F** (same values as the web Clock sync control). */
 
+/** Session grid on MK3/X/Pro uses Live-style notes (Classic map), including on mobile hosts with one USB port and no “DAW” in the name. */
+function usesClassicSessionNoteMap(midiPortName = "") {
+  if (getPadLayout() === "classic") return true;
+  if (/\bdaw\b/i.test(midiPortName)) return true;
+  if (dom.midiSysex?.checked && portLooksLikeNovationLaunchpad(midiPortName)) return true;
+  return false;
+}
+
+function portLooksLikeNovationLaunchpad(portName) {
+  return /launchpad|lpmini|lppromk3|\blpx\b|novation/i.test(portName || "");
+}
+
 function sessionLightNoteForPadKey(padKey, outputName) {
-  const on = outputName || "";
-  if (getPadLayout() === "classic") {
-    return LAUNCHPAD_PAD_TO_NOTE_CLASSIC[padKey] ?? null;
-  }
-  if (/\bdaw\b/i.test(on)) {
+  if (usesClassicSessionNoteMap(outputName)) {
     return LAUNCHPAD_PAD_TO_NOTE_CLASSIC[padKey] ?? null;
   }
   return LAUNCHPAD_PAD_TO_NOTE_MODERN[padKey] ?? null;
@@ -682,7 +690,7 @@ function clearPendingLoopStartTimerIds(loopId) {
  * @returns {boolean} handled
  */
 function handleLaunchpadMiniMk3PackNavCcPress(port, d1, d2, raw) {
-  if (!portLooksLikeLaunchpadMiniMk3(port) || d2 <= 0) return false;
+  if (!portLooksLikeNovationLaunchpad(port) || d2 <= 0) return false;
   if (d1 === MINI_MK3_ARROW_UP_CC || d1 === MINI_MK3_ARROW_DOWN_CC) {
     const delta = d1 === MINI_MK3_ARROW_UP_CC ? -1 : 1;
     applySessionRowScroll(delta);
@@ -755,7 +763,7 @@ function refreshLaunchpadMiniMk3PackNavLeds() {
   const upV = maxScroll > 0 && off > 0 ? packNavV : 0;
   const downV = maxScroll > 0 && off < maxScroll ? packNavV : 0;
   eachLaunchpadSessionLightOutput((output, name) => {
-    if (!portLooksLikeLaunchpadMiniMk3(name)) return;
+    if (!portLooksLikeNovationLaunchpad(name)) return;
     try {
       output.send(new Uint8Array([0xb0, MINI_MK3_ARROW_LEFT_CC & 0x7f, packNavV]));
       output.send(new Uint8Array([0xb0, MINI_MK3_ARROW_RIGHT_CC & 0x7f, packNavV]));
@@ -809,11 +817,18 @@ function pickPreferredMidiInputId() {
   if (!store.midiAccess) return "";
   const inputs = [...store.midiAccess.inputs.values()];
   if (inputs.length === 0) return "";
+  if (dom.midiSysex?.checked) {
+    const daw = inputs.filter((i) => /\bdaw\b/i.test(i.name || ""));
+    if (daw.length > 0) return daw[0].id;
+    const lp = inputs.find((i) => portLooksLikeNovationLaunchpad(i.name || ""));
+    if (lp) return lp.id;
+    return inputs[0].id;
+  }
   const nonDaw = inputs.filter((i) => !/\bdaw\b/i.test(i.name || ""));
   if (nonDaw.length > 0) {
     const withMidi = nonDaw.find((i) => /\bmidi\b/i.test(i.name || ""));
     if (withMidi) return withMidi.id;
-    const lp = nonDaw.find((i) => /launchpad|lpmini|lpx|lppromk3/i.test(i.name || ""));
+    const lp = nonDaw.find((i) => portLooksLikeNovationLaunchpad(i.name || ""));
     if (lp) return lp.id;
     return nonDaw[0].id;
   }
@@ -2632,6 +2647,17 @@ function refreshPlaybackAnchorPadKeysAfterSessionScroll() {
   }
 }
 
+/** Align web clip window with hardware after connect (hardware row offset may be non-zero). */
+function resetSessionRowScrollToZero() {
+  if (!store.pack?.sessionChannelsFull || store.pack.nCols <= 0) return;
+  if ((store.pack.sessionRowScrollOffset ?? 0) === 0) return;
+  store.pack.sessionRowScrollOffset = 0;
+  store.pack.channels = buildVisibleSessionSlice(store.pack.sessionChannelsFull, 0, store.pack.nCols);
+  refreshPlaybackAnchorPadKeysAfterSessionScroll();
+  renderGrid(store.pack);
+  maybeRefreshClipLegendAfterChannelsChange();
+}
+
 /** Vertical scroll through `session.channels` when taller than six clip rows (A–F). */
 function applySessionRowScroll(delta) {
   if (!store.pack?.sessionChannelsFull || store.pack.nCols <= 0) return;
@@ -2651,26 +2677,24 @@ function applySessionRowScroll(delta) {
 }
 
 function padKeyFromNote(note, midiInputPortName = "") {
-  const port = midiInputPortName || "";
-  const daw = /\bdaw\b/i.test(port);
-  if (getPadLayout() === "classic") {
-    return noteToPadClassic[String(note)] ?? null;
+  const noteStr = String(note);
+  const classicPad = noteToPadClassic[noteStr] ?? null;
+  const modernPad = noteToPadModern[noteStr] ?? null;
+  if (usesClassicSessionNoteMap(midiInputPortName)) {
+    return classicPad ?? modernPad;
   }
-  /**
-   * “Modern” in the UI = Arcade pack / MK3 family. Hardware **MIDI** port (Custom / User) uses the Modern
-   * table; **DAW** port Session traffic matches Ableton Live–style numbering → same bytes as **Classic** map.
-   */
-  if (daw) {
-    const classicPad = noteToPadClassic[String(note)] ?? null;
-    if (classicPad) return classicPad;
+  /** Mobile often exposes one port without “DAW” in the name; Session still sends Classic bytes. */
+  if (dom.midiSysex?.checked && classicPad && modernPad && classicPad !== modernPad) {
+    return classicPad;
   }
-  return noteToPadModern[String(note)] ?? null;
+  return modernPad ?? classicPad;
 }
 
 function padDecodeNoteMapHint(note, midiInputPortName = "") {
-  if (getPadLayout() === "classic") return "Classic layout map";
-  if (/\bdaw\b/i.test(midiInputPortName || "") && noteToPadClassic[String(note)]) {
-    return "DAW port · Live-style (Classic) notes";
+  if (usesClassicSessionNoteMap(midiInputPortName)) {
+    return dom.midiSysex?.checked && !/\bdaw\b/i.test(midiInputPortName || "")
+      ? "Classic Session notes (DAW SysEx / mobile Launchpad)"
+      : "Classic layout map";
   }
   return "Modern (Arcade) notes";
 }
@@ -4309,6 +4333,7 @@ async function connectMidi() {
   if (dom.btnMidiStandalone) dom.btnMidiStandalone.disabled = false;
   bindMidiInputs();
   const switched = ensureModernLayoutForHardware();
+  resetSessionRowScrollToZero();
   const sessionOuts = sendLaunchpadSessionSysex();
   refreshMidiStatus(sessionOuts);
   if (switched) {
