@@ -90,12 +90,48 @@ import { restoreSettingsFromLocalStorage } from "./init-settings.js";
 
 /** Hold **H8** to choose **Clock sync** via **8A…8F** (same values as the web Clock sync control). */
 
-/** Session grid on MK3/X/Pro uses Live-style notes (Classic map), including on mobile hosts with one USB port and no “DAW” in the name. */
+/** Narrow viewport / touch-first host (phone + Launchpad over Web MIDI). */
+function isMobileSessionHost() {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.matchMedia("(max-width: 900px)").matches;
+  } catch {
+    return false;
+  }
+}
+
+/** Session grid on MK3/X/Pro uses Live-style notes (Classic map) on the DAW port. */
 function usesClassicSessionNoteMap(midiPortName = "") {
   if (getPadLayout() === "classic") return true;
   if (/\bdaw\b/i.test(midiPortName)) return true;
-  if (dom.midiSysex?.checked && portLooksLikeNovationLaunchpad(midiPortName)) return true;
   return false;
+}
+
+/**
+ * Classic Session notes; some mobile hosts deliver a note ~16 too low for pads in columns 5–8 only
+ * (e.g. raw 35 → 5F, should be 51 → 1D). Do not apply +16 when the raw decode is already in cols 1–4
+ * (that wrongly mapped 1B → 7A and broke clip triggers / volume selection on demo-pulse cols 1–6).
+ */
+function resolveClassicSessionPadKey(note) {
+  const n = Number(note);
+  const direct = noteToPadClassic[String(n)] ?? null;
+  if (!isMobileSessionHost() || !dom.midiSysex?.checked) return direct;
+  const bumpedN = n + 16;
+  const bumped = bumpedN <= 127 ? noteToPadClassic[String(bumpedN)] ?? null : null;
+  const directP = direct ? parsePadKey(direct) : null;
+  const bumpedP = bumped ? parsePadKey(bumped) : null;
+  if (
+    directP &&
+    bumpedP &&
+    directP.rowIdx <= LAUNCHPAD_CLIP_SESSION_MAX_ROW &&
+    bumpedP.rowIdx <= LAUNCHPAD_CLIP_SESSION_MAX_ROW &&
+    directP.col >= 4 &&
+    bumpedP.col < directP.col &&
+    directP.col - bumpedP.col >= 4
+  ) {
+    return bumped;
+  }
+  return direct;
 }
 
 function portLooksLikeNovationLaunchpad(portName) {
@@ -103,7 +139,7 @@ function portLooksLikeNovationLaunchpad(portName) {
 }
 
 function sessionLightNoteForPadKey(padKey, outputName) {
-  if (usesClassicSessionNoteMap(outputName)) {
+  if (usesClassicSessionNoteMap(outputName) || (dom.midiSysex?.checked && isMobileSessionHost())) {
     return LAUNCHPAD_PAD_TO_NOTE_CLASSIC[padKey] ?? null;
   }
   return LAUNCHPAD_PAD_TO_NOTE_MODERN[padKey] ?? null;
@@ -856,9 +892,11 @@ function populateMidiInputSelect() {
     o.textContent = input.name || input.id;
     dom.midiInput.appendChild(o);
   }
-  if (saved === "__all__") dom.midiInput.value = "__all__";
-  else if (saved && ids.has(saved)) dom.midiInput.value = saved;
-  else {
+  if (saved === "__all__" && !(dom.midiSysex?.checked && isMobileSessionHost())) {
+    dom.midiInput.value = "__all__";
+  } else if (saved && saved !== "__all__" && ids.has(saved)) {
+    dom.midiInput.value = saved;
+  } else {
     const pref = pickPreferredMidiInputId();
     dom.midiInput.value = pref && ids.has(pref) ? pref : [...ids][0] ?? "__all__";
   }
@@ -2658,6 +2696,21 @@ function resetSessionRowScrollToZero() {
   maybeRefreshClipLegendAfterChannelsChange();
 }
 
+/** Avoid stale row/col flip or scroll on phone after desktop use. */
+function prepareMobileMidiSession() {
+  if (!isMobileSessionHost()) return;
+  resetSessionRowScrollToZero();
+  if (dom.gridFlip && dom.gridFlip.value !== "none") {
+    dom.gridFlip.value = "none";
+    try {
+      localStorage.setItem(GRID_FLIP_STORAGE_KEY, "none");
+    } catch {
+      /* ignore */
+    }
+    if (store.pack) renderGrid(store.pack);
+  }
+}
+
 /** Vertical scroll through `session.channels` when taller than six clip rows (A–F). */
 function applySessionRowScroll(delta) {
   if (!store.pack?.sessionChannelsFull || store.pack.nCols <= 0) return;
@@ -2678,23 +2731,43 @@ function applySessionRowScroll(delta) {
 
 function padKeyFromNote(note, midiInputPortName = "") {
   const noteStr = String(note);
-  const classicPad = noteToPadClassic[noteStr] ?? null;
+  const classicPad = resolveClassicSessionPadKey(note);
   const modernPad = noteToPadModern[noteStr] ?? null;
   if (usesClassicSessionNoteMap(midiInputPortName)) {
     return classicPad ?? modernPad;
   }
-  /** Mobile often exposes one port without “DAW” in the name; Session still sends Classic bytes. */
-  if (dom.midiSysex?.checked && classicPad && modernPad && classicPad !== modernPad) {
-    return classicPad;
+  if (dom.midiSysex?.checked && isMobileSessionHost()) {
+    return classicPad ?? modernPad;
+  }
+  if (classicPad && modernPad && classicPad !== modernPad) {
+    if (store.pack) {
+      const cLoop = getLoopIdForSessionClipPadOrScan(classicPad);
+      const mLoop = getLoopIdForSessionClipPadOrScan(modernPad);
+      if (mLoop != null && cLoop == null) return modernPad;
+      if (cLoop != null && mLoop == null) return classicPad;
+    }
+    if (dom.midiSysex?.checked) return classicPad;
   }
   return modernPad ?? classicPad;
 }
 
+function sessionNoteMapDebugExtra(note, padKey) {
+  const direct = noteToPadClassic[String(note)] ?? null;
+  if (!isMobileSessionHost() || !dom.midiSysex?.checked || !direct || direct === padKey) {
+    return null;
+  }
+  const bumped = note + 16 <= 127 ? noteToPadClassic[String(note + 16)] ?? null : null;
+  return `raw classic ${direct} → ${padKey}${bumped && bumped !== padKey ? ` (mobile +16 fix from note ${note + 16})` : ""}`;
+}
+
 function padDecodeNoteMapHint(note, midiInputPortName = "") {
   if (usesClassicSessionNoteMap(midiInputPortName)) {
-    return dom.midiSysex?.checked && !/\bdaw\b/i.test(midiInputPortName || "")
-      ? "Classic Session notes (DAW SysEx / mobile Launchpad)"
+    return /\bdaw\b/i.test(midiInputPortName || "")
+      ? "Classic Session notes (DAW port)"
       : "Classic layout map";
+  }
+  if (dom.midiSysex?.checked && isMobileSessionHost()) {
+    return "Classic Session notes (mobile DAW SysEx)";
   }
   return "Modern (Arcade) notes";
 }
@@ -4178,11 +4251,14 @@ function handleMidiMessage(ev) {
     }
   }
   const mapHint = padDecodeNoteMapHint(noteNum, port);
+  const mobileFix = sessionNoteMapDebugExtra(noteNum, padKey);
   setMidiDebugLine([
     port.slice(0, 56),
     raw,
+    `note ${noteNum}`,
     padKey,
     mapHint,
+    mobileFix,
     flipPackHint || null,
     loopId != null ? `loop ${loopId}` : null,
     uiCellHint,
@@ -4297,7 +4373,9 @@ function refreshMidiStatus(sessionOutputs = null) {
   } else if (sessionOutputs != null) {
     if (sessionOutputs < 0) {
       msg +=
-        " · DAW Session SysEx is off — hardware Session / Custom / Drum / Keys behave normally. Turn on the checkbox below only to match Arcade’s layout on the pads.";
+        isMobileSessionHost() && portsSuggestModernLaunchpad()
+          ? " · **Send DAW Session SysEx** is off — on phone/tablet the Session grid will be wrong until you enable it (Advanced options), then Connect MIDI again or toggle the checkbox."
+          : " · DAW Session SysEx is off — hardware Session / Custom / Drum / Keys behave normally. Turn on the checkbox below only to match Arcade’s layout on the pads.";
     } else if (sessionOutputs > 0) {
       msg += ` · Session layout SysEx → ${sessionOutputs} Launchpad output(s)`;
     } else {
@@ -4333,7 +4411,7 @@ async function connectMidi() {
   if (dom.btnMidiStandalone) dom.btnMidiStandalone.disabled = false;
   bindMidiInputs();
   const switched = ensureModernLayoutForHardware();
-  resetSessionRowScrollToZero();
+  prepareMobileMidiSession();
   const sessionOuts = sendLaunchpadSessionSysex();
   refreshMidiStatus(sessionOuts);
   if (switched) {
