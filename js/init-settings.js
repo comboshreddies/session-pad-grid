@@ -66,7 +66,9 @@ export function restoreSettingsFromLocalStorage() {
   }
   try {
     const sx = localStorage.getItem(MIDI_SYSEX_SESSION_STORAGE_KEY);
-    if (dom.midiSysex && (sx === "1" || sx === "0")) dom.midiSysex.checked = sx === "1";
+    if (dom.midiSysex) {
+      dom.midiSysex.checked = sx !== "0";
+    }
   } catch {
     /* ignore */
   }
