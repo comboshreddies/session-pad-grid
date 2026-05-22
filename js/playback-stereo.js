@@ -77,6 +77,56 @@ export function disconnectVoiceNodes(voice) {
     /* ignore */
   }
   try {
+    voice.spectrumHighPass?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  try {
+    voice.spectrumLowPass?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  try {
+    voice.compressor?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  try {
+    voice.compressorMakeup?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  try {
+    voice.delayDry?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  try {
+    voice.delayNode?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  try {
+    voice.delayFeedback?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  try {
+    voice.delayTone?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  try {
+    voice.delayWet?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  try {
+    voice.delaySum?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  try {
     voice.distortionDrive?.disconnect();
   } catch {
     /* ignore */

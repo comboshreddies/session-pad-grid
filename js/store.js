@@ -64,7 +64,48 @@ export const store = {
   /** Right pan step 0…8; left = 8 − right. */
   g6ClipRightPanStepByLoopId: new Map(),
 
-  /** Hold scene row 4 / CC **59** (web side panel **D**): distortion on selected clips **1A…8F**. */
+  /** Hold scene row 4 / CC **59** (web side panel row **D**): HPF (row G) + LPF (row H) on selected clips **1A…8F**. */
+  scene4EqMenuHeld: false,
+  scene4EqMenuLatched: false,
+  scene4HighPassStepSelection: /** @type {number|null} */ (null),
+  scene4LowPassStepSelection: /** @type {number|null} */ (null),
+  scene4SelectedClipLoopIds: new Set(),
+  /** @type {Map<string, import('./playback-spectrum-eq.js').ClipSpectrumEqParams>} */
+  scene4ClipEqByLoopId: new Map(),
+
+  /** Hold scene row 5 / CC **49** (web side panel row **E**): compressor on selected clips **1A…8F**. */
+  scene5CompressorMenuHeld: false,
+  scene5CompressorMenuLatched: false,
+  scene5ThresholdStepSelection: /** @type {number|null} */ (null),
+  scene5RatioStepSelection: /** @type {number|null} */ (null),
+  scene5MakeupStepSelection: /** @type {number|null} */ (null),
+  scene5SelectedClipLoopIds: new Set(),
+  /** @type {Map<string, import('./playback-compressor.js').ClipCompressorParams>} */
+  scene5ClipCompressorByLoopId: new Map(),
+
+  /** Hold scene row 7 / CC **29** (web side panel row **G**): delay on selected clips **1A…8F**. */
+  scene7DelayMenuHeld: false,
+  scene7DelayMenuLatched: false,
+  scene7TimeStepSelection: /** @type {number|null} */ (null),
+  scene7FeedbackStepSelection: /** @type {number|null} */ (null),
+  scene7MixStepSelection: /** @type {number|null} */ (null),
+  scene7ToneStepSelection: /** @type {number|null} */ (null),
+  scene7SelectedClipLoopIds: new Set(),
+  /** @type {Map<string, import('./playback-delay.js').ClipDelayParams>} */
+  scene7ClipDelayByLoopId: new Map(),
+
+  /** Hold scene row 8 / CC **19** (web side panel row **H**): reverb on selected clips **1A…8F**. */
+  scene8ReverbMenuHeld: false,
+  scene8ReverbMenuLatched: false,
+  scene8DecayStepSelection: /** @type {number|null} */ (null),
+  scene8RoomStepSelection: /** @type {number|null} */ (null),
+  scene8PreDelayStepSelection: /** @type {number|null} */ (null),
+  scene8MixStepSelection: /** @type {number|null} */ (null),
+  scene8SelectedClipLoopIds: new Set(),
+  /** @type {Map<string, import('./playback-reverb.js').ClipReverbParams>} */
+  scene8ClipReverbByLoopId: new Map(),
+
+  /** Hold scene row 6 / CC **39** (web side panel row **F**): distortion on selected clips **1A…8F**. */
   g4DistortionMenuHeld: false,
   g4DistortionMenuLatched: false,
   /** Drive step 1…8 chosen on row **G** before applying to clips. */

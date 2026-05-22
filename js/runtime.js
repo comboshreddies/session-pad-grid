@@ -22,9 +22,21 @@ import {
   LP_SESSION_G7_VOLUME_MENU,
   LP_SESSION_G6_STEREO_MENU,
   LP_SESSION_G4_DISTORTION_MENU,
+  LP_SESSION_SCENE4_EQ_MENU,
+  LP_SESSION_SCENE5_COMP_MENU,
+  LP_SESSION_SCENE7_DELAY_MENU,
+  LP_SESSION_SCENE8_REVERB_MENU,
   LP_SESSION_STRIP_H_IDLE,
+  MINI_MK3_SCENE4_EQ_CC,
+  MINI_MK3_SCENE4_EQ_SCENE_IDLE_LED,
+  MINI_MK3_SCENE5_COMP_CC,
+  MINI_MK3_SCENE5_COMP_SCENE_IDLE_LED,
+  MINI_MK3_SCENE7_DELAY_CC,
+  MINI_MK3_SCENE7_DELAY_SCENE_IDLE_LED,
+  MINI_MK3_SCENE8_REVERB_CC,
+  MINI_MK3_SCENE8_REVERB_SCENE_IDLE_LED,
   MINI_MK3_DISTORTION_CC,
-  MINI_MK3_DISTORTION_IDLE_LED,
+  MINI_MK3_DISTORTION_SCENE_IDLE_LED,
   LP_SESSION_H_STOP_MODIFIER,
   SESSION_CLIP_LEGEND_SWATCHES,
   MINI_MK3_PANEL_RIGHT_CC,
@@ -70,6 +82,26 @@ import {
   applyClipDistortionToVoice,
   defaultClipDistortionParams,
 } from "./playback-distortion.js";
+import {
+  attachSpectrumEqToVoice,
+  applyClipSpectrumEqToVoice,
+  defaultClipSpectrumEqParams,
+} from "./playback-spectrum-eq.js";
+import {
+  attachCompressorToVoice,
+  applyClipCompressorToVoice,
+  defaultClipCompressorParams,
+} from "./playback-compressor.js";
+import {
+  attachDelayToVoice,
+  applyClipDelayToVoice,
+  defaultClipDelayParams,
+} from "./playback-delay.js";
+import {
+  attachReverbToVoice,
+  applyClipReverbToVoice,
+  defaultClipReverbParams,
+} from "./playback-reverb.js";
 import {
   clipChannelMark,
   clipChannelModeLabel,
@@ -277,7 +309,15 @@ function isStripMuteStopInertAtPhysicalCol(physicalCol) {
 const SIDE_PANEL_KIND_ROW_IDX = 0;
 const SIDE_PANEL_TYPE_ROW_IDX = 1;
 const SIDE_PANEL_STEREO_ROW_IDX = 2;
-const SIDE_PANEL_DISTORTION_ROW_IDX = 3;
+/** Web side panel row **D** (4th row) — matches Launchpad scene row 4 (CC 59). */
+const SIDE_PANEL_SCENE4_EQ_ROW_IDX = 3;
+/** Web side panel row **E** (5th row) — matches Launchpad scene row 5 (CC 49). */
+const SIDE_PANEL_SCENE5_COMP_ROW_IDX = 4;
+/** Web side panel row **F** (6th row) — matches Launchpad right-column scene row 6 (CC 39). */
+/** Web side panel row **G** (7th row) — matches Launchpad scene row 7 (CC 29). */
+const SIDE_PANEL_SCENE7_DELAY_ROW_IDX = 6;
+const SIDE_PANEL_SCENE8_REVERB_ROW_IDX = 7;
+const SIDE_PANEL_DISTORTION_ROW_IDX = 5;
 
 function getActiveOneShot(loopId) {
   const sid = String(loopId);
@@ -482,6 +522,10 @@ function startClipKindLegendHold() {
   if (store.g6StereoPanMenuHeld) setG6StereoPanMenuHeld(false);
   if (store.g7VolumeMenuHeld) setG7VolumeMenuHeld(false);
   if (store.g4DistortionMenuHeld) setG4DistortionMenuHeld(false);
+  if (store.scene7DelayMenuHeld) setScene7DelayMenuHeld(false);
+  if (store.scene8ReverbMenuHeld) setScene8ReverbMenuHeld(false);
+  if (store.scene5CompressorMenuHeld) setScene5CompressorMenuHeld(false);
+  if (store.scene4EqMenuHeld) setScene4EqMenuHeld(false);
   if (store.h8ClockStripMenuHeld) setH8ClockStripMenuHeld(false);
   store.clipTypeLegendHeld = false;
   store.clipTypeLegendVelocityByKey.clear();
@@ -509,6 +553,10 @@ function startClipTypeLegendHold() {
   if (store.g6StereoPanMenuHeld) setG6StereoPanMenuHeld(false);
   if (store.g7VolumeMenuHeld) setG7VolumeMenuHeld(false);
   if (store.g4DistortionMenuHeld) setG4DistortionMenuHeld(false);
+  if (store.scene7DelayMenuHeld) setScene7DelayMenuHeld(false);
+  if (store.scene8ReverbMenuHeld) setScene8ReverbMenuHeld(false);
+  if (store.scene4EqMenuHeld) setScene4EqMenuHeld(false);
+  if (store.scene5CompressorMenuHeld) setScene5CompressorMenuHeld(false);
   if (store.h8ClockStripMenuHeld) setH8ClockStripMenuHeld(false);
   store.clipKindLegendHeld = false;
   store.clipKindLegendVelocityByKey.clear();
@@ -549,6 +597,71 @@ function launchpadSessionPaletteForClipPadKey(padKey) {
     const queryByH = store.g7VolumeStepSelection != null && store.g7SelectedClipLoopIds.size === 0;
     if (queryByH && loopId != null && getClipG7VolumeStep(loopId) === store.g7VolumeStepSelection) {
       return LP_SESSION_G7_VOLUME_MENU.clipPurple;
+    }
+  }
+  if (store.scene7DelayMenuHeld && isG7ClipVolumeGridSessionPadKey(padKey)) {
+    if (loopId != null && store.scene7SelectedClipLoopIds.has(String(loopId))) {
+      return LP_SESSION_SCENE7_DELAY_MENU.clipPurple;
+    }
+    const p = loopId != null ? getClipDelayParams(loopId) : null;
+    if (p && store.scene7SelectedClipLoopIds.size === 0) {
+      if (store.scene7TimeStepSelection != null && p.timeStep === store.scene7TimeStepSelection) {
+        return LP_SESSION_SCENE7_DELAY_MENU.clipPurple;
+      }
+      if (store.scene7FeedbackStepSelection != null && p.feedbackStep === store.scene7FeedbackStepSelection) {
+        return LP_SESSION_SCENE7_DELAY_MENU.clipPurple;
+      }
+      if (store.scene7MixStepSelection != null && p.mixStep === store.scene7MixStepSelection) {
+        return LP_SESSION_SCENE7_DELAY_MENU.clipPurple;
+      }
+      if (store.scene7ToneStepSelection != null && p.toneStep === store.scene7ToneStepSelection) {
+        return LP_SESSION_SCENE7_DELAY_MENU.clipPurple;
+      }
+    }
+  }
+  if (store.scene8ReverbMenuHeld && isG7ClipVolumeGridSessionPadKey(padKey)) {
+    if (loopId != null && store.scene8SelectedClipLoopIds.has(String(loopId))) {
+      return LP_SESSION_SCENE8_REVERB_MENU.clipPurple;
+    }
+    const rv = loopId != null ? getClipReverbParams(loopId) : null;
+    if (rv && store.scene8SelectedClipLoopIds.size === 0) {
+      if (store.scene8DecayStepSelection != null && rv.decayStep === store.scene8DecayStepSelection) {
+        return LP_SESSION_SCENE8_REVERB_MENU.clipPurple;
+      }
+      if (store.scene8RoomStepSelection != null && rv.roomStep === store.scene8RoomStepSelection) {
+        return LP_SESSION_SCENE8_REVERB_MENU.clipPurple;
+      }
+      if (store.scene8PreDelayStepSelection != null && rv.preDelayStep === store.scene8PreDelayStepSelection) {
+        return LP_SESSION_SCENE8_REVERB_MENU.clipPurple;
+      }
+      if (store.scene8MixStepSelection != null && rv.mixStep === store.scene8MixStepSelection) {
+        return LP_SESSION_SCENE8_REVERB_MENU.clipPurple;
+      }
+    }
+  }
+  if (store.scene5CompressorMenuHeld && isG7ClipVolumeGridSessionPadKey(padKey)) {
+    if (loopId != null && store.scene5SelectedClipLoopIds.has(String(loopId))) {
+      return LP_SESSION_SCENE5_COMP_MENU.clipPurple;
+    }
+    const qThr =
+      store.scene5ThresholdStepSelection != null && store.scene5SelectedClipLoopIds.size === 0;
+    if (qThr && loopId != null && getClipCompressorParams(loopId).thresholdStep === store.scene5ThresholdStepSelection) {
+      return LP_SESSION_SCENE5_COMP_MENU.clipPurple;
+    }
+  }
+  if (store.scene4EqMenuHeld && isG7ClipVolumeGridSessionPadKey(padKey)) {
+    if (loopId != null && store.scene4SelectedClipLoopIds.has(String(loopId))) {
+      return LP_SESSION_SCENE4_EQ_MENU.clipPurple;
+    }
+    const qHp =
+      store.scene4HighPassStepSelection != null && store.scene4SelectedClipLoopIds.size === 0;
+    if (qHp && loopId != null && getClipSpectrumEqParams(loopId).highPassStep === store.scene4HighPassStepSelection) {
+      return LP_SESSION_SCENE4_EQ_MENU.clipPurple;
+    }
+    const qLp =
+      store.scene4LowPassStepSelection != null && store.scene4SelectedClipLoopIds.size === 0;
+    if (qLp && loopId != null && getClipSpectrumEqParams(loopId).lowPassStep === store.scene4LowPassStepSelection) {
+      return LP_SESSION_SCENE4_EQ_MENU.clipPurple;
     }
   }
   if (store.g4DistortionMenuHeld && isG7ClipVolumeGridSessionPadKey(padKey)) {
@@ -665,7 +778,12 @@ function refreshLaunchpadSessionClipPadsHardwareOnly() {
       }
     }
   });
-  if (store.g7VolumeMenuHeld) refreshLaunchpadG7HStripHardware();
+  if (store.scene7DelayMenuHeld) refreshLaunchpadScene7DelayStripHardware();
+  if (store.scene8ReverbMenuHeld) refreshLaunchpadScene8ReverbStripHardware();
+  else if (store.scene5CompressorMenuHeld) refreshLaunchpadScene5CompStripHardware();
+  else if (store.scene4EqMenuHeld) refreshLaunchpadScene4EqStripHardware();
+  else if (store.g4DistortionMenuHeld) refreshLaunchpadG4DistortionStripHardware();
+  else if (store.g7VolumeMenuHeld) refreshLaunchpadG7HStripHardware();
 }
 
 /** Full clip grid (A–F) + row **G** bar clock (web always; hardware when MIDI connected). */
@@ -807,6 +925,54 @@ function handleLaunchpadSceneSideCcPress(port, d1, d2, raw) {
     ]);
     return true;
   }
+  if (d1 === MINI_MK3_SCENE7_DELAY_CC) {
+    if (store.pack) setScene7DelayMenuHeld(true);
+    setMidiDebugLine([
+      port.slice(0, 56),
+      raw,
+      cc,
+      store.pack
+        ? "Launchpad · **hold** — delay (row 7); G1–G4=time, G5–G8=feedback, H1–H4=mix, H5–H8=tone"
+        : "Launchpad · delay (load a sample set first)",
+    ]);
+    return true;
+  }
+  if (d1 === MINI_MK3_SCENE8_REVERB_CC) {
+    if (store.pack) setScene8ReverbMenuHeld(true);
+    setMidiDebugLine([
+      port.slice(0, 56),
+      raw,
+      cc,
+      store.pack
+        ? "Launchpad · **hold** — reverb (row 8); G1–G4=decay, G5–G8=room, H1–H4=pre-delay, H5–H8=wet"
+        : "Launchpad · reverb (load a sample set first)",
+    ]);
+    return true;
+  }
+  if (d1 === MINI_MK3_SCENE5_COMP_CC) {
+    if (store.pack) setScene5CompressorMenuHeld(true);
+    setMidiDebugLine([
+      port.slice(0, 56),
+      raw,
+      cc,
+      store.pack
+        ? "Launchpad · **hold** — compressor (row 5); G=threshold, H1–H4=ratio, H5–H8=makeup"
+        : "Launchpad · compressor (load a sample set first)",
+    ]);
+    return true;
+  }
+  if (d1 === MINI_MK3_SCENE4_EQ_CC) {
+    if (store.pack) setScene4EqMenuHeld(true);
+    setMidiDebugLine([
+      port.slice(0, 56),
+      raw,
+      cc,
+      store.pack
+        ? "Launchpad · **hold** — spectrum EQ (row 4); G=HPF 1…8, H=LPF 1…8, clips 1A…8F"
+        : "Launchpad · spectrum EQ (load a sample set first)",
+    ]);
+    return true;
+  }
   if (d1 === MINI_MK3_STEREO_PAN_CC) {
     if (store.pack) setG6StereoPanMenuHeld(true);
     setMidiDebugLine([
@@ -826,7 +992,7 @@ function handleLaunchpadSceneSideCcPress(port, d1, d2, raw) {
       raw,
       cc,
       store.pack
-        ? "Launchpad · **hold** — distortion (row 4); G=drive 1…8, H=OS/clip/tone, clips 1A…8F"
+        ? "Launchpad · **hold** — distortion (row 6); G=drive 1…8, H=OS/clip/tone, clips 1A…8F"
         : "Launchpad · distortion (load a sample set first)",
     ]);
     return true;
@@ -857,6 +1023,46 @@ function handleLaunchpadSceneSideCcRelease(port, d1, raw) {
     ]);
     return true;
   }
+  if (d1 === MINI_MK3_SCENE7_DELAY_CC && store.scene7DelayMenuHeld) {
+    setScene7DelayMenuHeld(false);
+    setMidiDebugLine([
+      port.slice(0, 56),
+      raw,
+      cc,
+      "Launchpad · delay released (right column row 7)",
+    ]);
+    return true;
+  }
+  if (d1 === MINI_MK3_SCENE8_REVERB_CC && store.scene8ReverbMenuHeld) {
+    setScene8ReverbMenuHeld(false);
+    setMidiDebugLine([
+      port.slice(0, 56),
+      raw,
+      cc,
+      "Launchpad · reverb released (right column row 8)",
+    ]);
+    return true;
+  }
+  if (d1 === MINI_MK3_SCENE5_COMP_CC && store.scene5CompressorMenuHeld) {
+    setScene5CompressorMenuHeld(false);
+    setMidiDebugLine([
+      port.slice(0, 56),
+      raw,
+      cc,
+      "Launchpad · compressor released (right column row 5)",
+    ]);
+    return true;
+  }
+  if (d1 === MINI_MK3_SCENE4_EQ_CC && store.scene4EqMenuHeld) {
+    setScene4EqMenuHeld(false);
+    setMidiDebugLine([
+      port.slice(0, 56),
+      raw,
+      cc,
+      "Launchpad · spectrum EQ released (right column row 4)",
+    ]);
+    return true;
+  }
   if (d1 === MINI_MK3_STEREO_PAN_CC && store.g6StereoPanMenuHeld) {
     setG6StereoPanMenuHeld(false);
     setMidiDebugLine([
@@ -873,7 +1079,7 @@ function handleLaunchpadSceneSideCcRelease(port, d1, raw) {
       port.slice(0, 56),
       raw,
       cc,
-      "Launchpad · distortion released (right column row 4)",
+      "Launchpad · distortion released (right column row 6)",
     ]);
     return true;
   }
@@ -910,55 +1116,9 @@ function wireColLabelScrollButtons() {
   }
 }
 
-/** Mini MK3 ◀ ▶ sample-set + ▲ ▼ session row scroll (CC colours on DAW out). */
+/** Mini MK3 ◀ ▶ sample-set + ▲ ▼ session row scroll + scene side CC colours (DAW out). */
 function refreshLaunchpadMiniMk3PackNavLeds() {
-  if (!store.midiAccess) return;
-  const packNavV = Math.min(127, Math.max(0, MINI_MK3_PACK_NAV_LED_PALETTE));
-  const maxScroll = store.pack?.sessionChannelsFull
-    ? getSessionScrollMaxOffsetFromFull(store.pack.sessionChannelsFull)
-    : 0;
-  const off = store.pack?.sessionRowScrollOffset ?? 0;
-  const upV = maxScroll > 0 && off > 0 ? packNavV : 0;
-  const downV = maxScroll > 0 && off < maxScroll ? packNavV : 0;
-  eachLaunchpadSessionLightOutput((output, name) => {
-    if (!portLooksLikeNovationLaunchpad(name)) return;
-    try {
-      output.send(new Uint8Array([0xb0, MINI_MK3_ARROW_LEFT_CC & 0x7f, packNavV]));
-      output.send(new Uint8Array([0xb0, MINI_MK3_ARROW_RIGHT_CC & 0x7f, packNavV]));
-      output.send(new Uint8Array([0xb0, MINI_MK3_ARROW_UP_CC & 0x7f, upV]));
-      output.send(new Uint8Array([0xb0, MINI_MK3_ARROW_DOWN_CC & 0x7f, downV]));
-      const kindTopLed =
-        !store.pack || store.pack.nCols <= 0
-          ? 0
-          : store.clipKindLegendHeld
-            ? LP_SESSION_PALETTE.armed
-            : MINI_MK3_CLIP_LEGEND_KIND_SCENE_IDLE_LED;
-      const typeSceneLed =
-        !store.pack || store.pack.nCols <= 0
-          ? 0
-          : store.clipTypeLegendHeld
-            ? LP_SESSION_PALETTE.armed
-            : MINI_MK3_CLIP_LEGEND_TYPE_SCENE_IDLE_LED;
-      const stereoPanLed =
-        !store.pack || store.pack.nCols <= 0
-          ? 0
-          : store.g6StereoPanMenuHeld
-            ? LP_SESSION_PALETTE.armed
-            : MINI_MK3_STEREO_PAN_IDLE_LED;
-      const distortionLed =
-        !store.pack || store.pack.nCols <= 0
-          ? 0
-          : store.g4DistortionMenuHeld
-            ? LP_SESSION_PALETTE.armed
-            : MINI_MK3_DISTORTION_IDLE_LED;
-      output.send(new Uint8Array([0xb0, MINI_MK3_CLIP_KIND_LEGEND_CC & 0x7f, kindTopLed]));
-      output.send(new Uint8Array([0xb0, MINI_MK3_CLIP_TYPE_LEGEND_CC & 0x7f, typeSceneLed]));
-      output.send(new Uint8Array([0xb0, MINI_MK3_STEREO_PAN_CC & 0x7f, stereoPanLed]));
-      output.send(new Uint8Array([0xb0, MINI_MK3_DISTORTION_CC & 0x7f, distortionLed]));
-    } catch (err) {
-      console.warn("Launchpad Mini MK3 pack-nav LED (CC) failed:", name, err);
-    }
-  });
+  refreshLaunchpadSceneSideCcLeds();
 }
 
 function cyclePackFromHardware(delta) {
@@ -1197,7 +1357,17 @@ function applyHStopModifierWebClasses() {
     const stopCol = store.hStopModifierPhysicalCols.has(dc);
     pad.classList.toggle("g-stop-col-active", stopCol);
     // Pan/volume menus own row-G labels (L1…L8 / mute col); do not overwrite after H-strip pointerup.
-    if (store.g6StereoPanMenuHeld || store.g7VolumeMenuHeld || store.g4DistortionMenuHeld) continue;
+    if (
+      store.g6StereoPanMenuHeld ||
+      store.g7VolumeMenuHeld ||
+      store.g4DistortionMenuHeld ||
+      store.scene4EqMenuHeld ||
+      store.scene5CompressorMenuHeld ||
+      store.scene7DelayMenuHeld ||
+      store.scene8ReverbMenuHeld
+    ) {
+      continue;
+    }
     const defaultNm = pad.dataset.stripGNmDefault ?? "mute col";
     nm.textContent = stopCol ? "stop col" : defaultNm;
   }
@@ -1211,7 +1381,11 @@ function clearHStopModifierPhysicalCols() {
     store.midiAccess &&
     !store.g7VolumeMenuHeld &&
     !store.g6StereoPanMenuHeld &&
-    !store.g4DistortionMenuHeld
+    !store.g4DistortionMenuHeld &&
+    !store.scene4EqMenuHeld &&
+    !store.scene5CompressorMenuHeld &&
+    !store.scene7DelayMenuHeld &&
+    !store.scene8ReverbMenuHeld
   ) {
     queueMicrotask(() => refreshLaunchpadStripRowHIdleHardware());
   }
@@ -1226,7 +1400,11 @@ function setHStopModifierHeld(physicalCol, on) {
     store.midiAccess &&
     !store.g7VolumeMenuHeld &&
     !store.g6StereoPanMenuHeld &&
-    !store.g4DistortionMenuHeld
+    !store.g4DistortionMenuHeld &&
+    !store.scene4EqMenuHeld &&
+    !store.scene5CompressorMenuHeld &&
+    !store.scene7DelayMenuHeld &&
+    !store.scene8ReverbMenuHeld
   ) {
     queueMicrotask(() => refreshLaunchpadStripRowHIdleHardware());
   }
@@ -1563,6 +1741,10 @@ function setH8ClockStripMenuHeld(on) {
   if (on && store.g7VolumeMenuHeld) setG7VolumeMenuHeld(false);
   if (on && store.g6StereoPanMenuHeld) setG6StereoPanMenuHeld(false);
   if (on && store.g4DistortionMenuHeld) setG4DistortionMenuHeld(false);
+  if (on && store.scene4EqMenuHeld) setScene4EqMenuHeld(false);
+  if (on && store.scene5CompressorMenuHeld) setScene5CompressorMenuHeld(false);
+  if (on && store.scene7DelayMenuHeld) setScene7DelayMenuHeld(false);
+  if (on && store.scene8ReverbMenuHeld) setScene8ReverbMenuHeld(false);
   if (on) clearHStopModifierPhysicalCols();
   store.h8ClockStripMenuHeld = on;
   if (dom.grid) dom.grid.classList.toggle("h8-clock-menu-active", on);
@@ -1846,14 +2028,1451 @@ function updateG7VoiceGainForLoop(loopId) {
 }
 
 function wireStereoVoice(src, loopId, velN, loop) {
-  const voice = attachDistortionToVoice(
-    store.audioCtx,
-    wireBufferSourceWithStereoPan(store.audioCtx, src, connectVoiceToMaster),
-  );
+  let voice = wireBufferSourceWithStereoPan(store.audioCtx, src, connectVoiceToMaster);
+  voice = attachSpectrumEqToVoice(store.audioCtx, voice);
+  voice = attachCompressorToVoice(store.audioCtx, voice);
+  voice = attachDistortionToVoice(store.audioCtx, voice);
+  voice = attachDelayToVoice(store.audioCtx, voice);
+  voice = attachReverbToVoice(store.audioCtx, voice);
   voice.gainVelNorm = velN;
   applyVoiceGainLevels(voice, loopId, loop);
+  applyClipSpectrumEqToVoice(voice, getClipSpectrumEqParams(loopId));
+  applyClipCompressorToVoice(voice, getClipCompressorParams(loopId));
   applyClipDistortionToVoice(voice, getClipDistortionParams(loopId));
+  applyClipDelayToVoice(voice, getClipDelayParams(loopId));
+  applyClipReverbToVoice(voice, getClipReverbParams(loopId));
+  connectVoiceToMaster(voice.gain);
   return voice;
+}
+
+function getClipSpectrumEqParams(loopId) {
+  if (loopId == null) return defaultClipSpectrumEqParams();
+  const sid = String(loopId);
+  if (store.scene4ClipEqByLoopId.has(sid)) {
+    return { ...defaultClipSpectrumEqParams(), ...store.scene4ClipEqByLoopId.get(sid) };
+  }
+  const n = Number(loopId);
+  if (Number.isFinite(n) && store.scene4ClipEqByLoopId.has(n)) {
+    return { ...defaultClipSpectrumEqParams(), ...store.scene4ClipEqByLoopId.get(n) };
+  }
+  return defaultClipSpectrumEqParams();
+}
+
+function setClipSpectrumEqParams(loopId, partial) {
+  const cur = getClipSpectrumEqParams(loopId);
+  const next = {
+    highPassStep: Math.max(1, Math.min(8, Math.floor(Number(partial.highPassStep ?? cur.highPassStep)) || 1)),
+    lowPassStep: Math.max(1, Math.min(8, Math.floor(Number(partial.lowPassStep ?? cur.lowPassStep)) || 8)),
+  };
+  store.scene4ClipEqByLoopId.set(String(loopId), next);
+  if (Number.isFinite(Number(loopId))) store.scene4ClipEqByLoopId.set(Number(loopId), next);
+}
+
+function updateScene4EqVoiceForLoop(loopId) {
+  if (!store.pack || loopId == null) return;
+  const params = getClipSpectrumEqParams(loopId);
+  const sid = String(loopId);
+  let playing = store.activeLoops.get(loopId);
+  if (!playing && Number.isFinite(Number(loopId))) playing = store.activeLoops.get(Number(loopId));
+  if (!playing) playing = store.activeLoops.get(sid);
+  if (playing) applyClipSpectrumEqToVoice(playing, params);
+  const os = getActiveOneShot(loopId);
+  if (os) applyClipSpectrumEqToVoice(os, params);
+}
+
+function soleScene4SelectedClipLoopId() {
+  if (store.scene4SelectedClipLoopIds.size !== 1) return null;
+  return [...store.scene4SelectedClipLoopIds][0];
+}
+
+function clipEqStepLabel(prefix, step) {
+  const n = Math.max(1, Math.min(8, Math.floor(Number(step)) || 1));
+  return `${prefix}${n}`;
+}
+
+function refreshClipSpectrumEqLevelBadges() {
+  if (!dom.grid) return;
+  for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
+    const lid = el.dataset.loopId;
+    if (!lid) continue;
+    const p = getClipSpectrumEqParams(lid);
+    let badge = el.querySelector(".eq-lvl");
+    if (p.highPassStep <= 1 && p.lowPassStep >= 8) {
+      badge?.remove();
+      continue;
+    }
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "eq-lvl";
+      badge.setAttribute("aria-hidden", "true");
+      const vol = el.querySelector(".vol-lvl");
+      if (vol) vol.before(badge);
+      else el.append(badge);
+    }
+    badge.textContent = [
+      p.highPassStep > 1 ? clipEqStepLabel("HP", p.highPassStep) : null,
+      p.lowPassStep < 8 ? clipEqStepLabel("LP", p.lowPassStep) : null,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    badge.title = `Spectrum EQ · HPF ${p.highPassStep}/8 · LPF ${p.lowPassStep}/8 (before distortion)`;
+  }
+}
+
+function applyScene4HighPassStep(step) {
+  const s = Math.max(1, Math.min(8, Math.floor(Number(step)) || 1));
+  store.scene4HighPassStepSelection = s;
+  if (store.scene4SelectedClipLoopIds.size > 0) {
+    for (const id of store.scene4SelectedClipLoopIds) {
+      setClipSpectrumEqParams(id, { highPassStep: s });
+      updateScene4EqVoiceForLoop(id);
+    }
+    if (store.scene4SelectedClipLoopIds.size === 1) store.scene4HighPassStepSelection = null;
+  }
+  applyScene4EqMenuWebClasses();
+  refreshClipSpectrumEqLevelBadges();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadScene4EqStripHardware();
+    });
+  }
+}
+
+function applyScene4LowPassStep(step) {
+  const s = Math.max(1, Math.min(8, Math.floor(Number(step)) || 1));
+  store.scene4LowPassStepSelection = s;
+  if (store.scene4SelectedClipLoopIds.size > 0) {
+    for (const id of store.scene4SelectedClipLoopIds) {
+      setClipSpectrumEqParams(id, { lowPassStep: s });
+      updateScene4EqVoiceForLoop(id);
+    }
+    if (store.scene4SelectedClipLoopIds.size === 1) store.scene4LowPassStepSelection = null;
+  }
+  applyScene4EqMenuWebClasses();
+  refreshClipSpectrumEqLevelBadges();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadScene4EqStripHardware();
+    });
+  }
+}
+
+function toggleScene4ClipLoopSelection(loopId) {
+  const sid = String(loopId);
+  if (store.scene4SelectedClipLoopIds.has(sid)) store.scene4SelectedClipLoopIds.delete(sid);
+  else {
+    if (store.scene4SelectedClipLoopIds.size === 0) {
+      store.scene4HighPassStepSelection = null;
+      store.scene4LowPassStepSelection = null;
+    }
+    store.scene4SelectedClipLoopIds.add(sid);
+  }
+  if (store.scene4SelectedClipLoopIds.size === 1) {
+    store.scene4HighPassStepSelection = null;
+    store.scene4LowPassStepSelection = null;
+  }
+  applyScene4EqMenuWebClasses();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadScene4EqStripHardware();
+    });
+  }
+}
+
+function applyScene4EqMenuWebClasses() {
+  if (!dom.grid) return;
+  const soleId = soleScene4SelectedClipLoopId();
+  const soleEq = soleId != null ? getClipSpectrumEqParams(soleId) : null;
+  for (const pad of dom.grid.querySelectorAll('button.pad.utility[data-utility-row="6"]')) {
+    const dc = Number(pad.dataset.displayCol);
+    const nm = pad.querySelector(".nm");
+    if (nm && Number.isFinite(dc)) {
+      if (store.scene4EqMenuHeld) nm.textContent = `${dc + 1}/8`;
+      else if (pad.dataset.stripGNmDefault != null) nm.textContent = pad.dataset.stripGNmDefault;
+    }
+    const stepOnPad =
+      store.scene4EqMenuHeld &&
+      store.scene4HighPassStepSelection != null &&
+      store.scene4HighPassStepSelection === dc + 1;
+    const isCurrent =
+      store.scene4EqMenuHeld && soleEq != null && soleEq.highPassStep === dc + 1 && !stepOnPad;
+    pad.classList.toggle("scene4-g-hp-strip", store.scene4EqMenuHeld);
+    pad.classList.toggle("scene4-g-strip-step-apply", stepOnPad && store.scene4SelectedClipLoopIds.size > 0);
+    pad.classList.toggle("scene4-g-strip-step-query", stepOnPad && store.scene4SelectedClipLoopIds.size === 0);
+    pad.classList.toggle("scene4-g-strip-step-current", isCurrent);
+  }
+  for (const pad of dom.grid.querySelectorAll('button.pad.utility[data-utility-row="7"]')) {
+    const dc = Number(pad.dataset.displayCol);
+    const nm = pad.querySelector(".nm");
+    if (nm && Number.isFinite(dc)) {
+      if (store.scene4EqMenuHeld) nm.textContent = `${dc + 1}/8`;
+      else if (pad.dataset.stripHNmDefault != null) nm.textContent = pad.dataset.stripHNmDefault;
+    }
+    const stepOnPad =
+      store.scene4EqMenuHeld &&
+      store.scene4LowPassStepSelection != null &&
+      store.scene4LowPassStepSelection === dc + 1;
+    const isCurrent =
+      store.scene4EqMenuHeld && soleEq != null && soleEq.lowPassStep === dc + 1 && !stepOnPad;
+    pad.classList.toggle("scene4-h-lp-strip", store.scene4EqMenuHeld);
+    pad.classList.toggle("scene4-h-strip-step-apply", stepOnPad && store.scene4SelectedClipLoopIds.size > 0);
+    pad.classList.toggle("scene4-h-strip-step-query", stepOnPad && store.scene4SelectedClipLoopIds.size === 0);
+    pad.classList.toggle("scene4-h-strip-step-current", isCurrent);
+    pad.classList.toggle(
+      "scene4-h8-lp-max-strip",
+      store.scene4EqMenuHeld && pad.dataset.h8ClockMenuStrip === "true",
+    );
+  }
+  for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
+    const lid = el.dataset.loopId;
+    if (!lid) continue;
+    el.classList.toggle("scene4-clip-selected", store.scene4EqMenuHeld && store.scene4SelectedClipLoopIds.has(lid));
+    const eq = getClipSpectrumEqParams(lid);
+    const hpMatch =
+      store.scene4EqMenuHeld &&
+      store.scene4HighPassStepSelection != null &&
+      store.scene4SelectedClipLoopIds.size === 0 &&
+      eq.highPassStep === store.scene4HighPassStepSelection &&
+      !store.scene4SelectedClipLoopIds.has(lid);
+    const lpMatch =
+      store.scene4EqMenuHeld &&
+      store.scene4LowPassStepSelection != null &&
+      store.scene4SelectedClipLoopIds.size === 0 &&
+      eq.lowPassStep === store.scene4LowPassStepSelection &&
+      !store.scene4SelectedClipLoopIds.has(lid);
+    el.classList.toggle("scene4-clip-eq-match", hpMatch || lpMatch);
+  }
+}
+
+function clearScene4EqMenuWebClasses() {
+  if (!dom.grid) return;
+  for (const pad of dom.grid.querySelectorAll('button.pad.utility[data-utility-row="6"]')) {
+    const nm = pad.querySelector(".nm");
+    if (nm && pad.dataset.stripGNmDefault != null) nm.textContent = pad.dataset.stripGNmDefault;
+    pad.classList.remove(
+      "scene4-g-hp-strip",
+      "scene4-g-strip-step-apply",
+      "scene4-g-strip-step-query",
+      "scene4-g-strip-step-current",
+    );
+  }
+  for (const pad of dom.grid.querySelectorAll('button.pad.utility[data-utility-row="7"]')) {
+    const nm = pad.querySelector(".nm");
+    if (nm && pad.dataset.stripHNmDefault != null) nm.textContent = pad.dataset.stripHNmDefault;
+    pad.classList.remove(
+      "scene4-h-lp-strip",
+      "scene4-h-strip-step-apply",
+      "scene4-h-strip-step-query",
+      "scene4-h-strip-step-current",
+      "scene4-h8-lp-max-strip",
+    );
+  }
+  for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
+    el.classList.remove("scene4-clip-selected", "scene4-clip-eq-match");
+  }
+}
+
+function refreshLaunchpadScene4EqStripHardware() {
+  if (!store.midiAccess || !store.pack || !store.scene4EqMenuHeld) return;
+  const soleEq =
+    store.scene4SelectedClipLoopIds.size === 1
+      ? getClipSpectrumEqParams(soleScene4SelectedClipLoopId())
+      : null;
+  for (let dc = 0; dc < 8; dc += 1) {
+    const pkG = padKeyFromPhysicalCell(dc, 6);
+    let vG = LP_SESSION_SCENE4_EQ_MENU.stripRowG;
+    const stepHp = dc + 1;
+    if (store.scene4HighPassStepSelection != null && store.scene4HighPassStepSelection === stepHp) {
+      vG =
+        store.scene4SelectedClipLoopIds.size > 0
+          ? LP_SESSION_SCENE4_EQ_MENU.stripStepApplyYellow
+          : LP_SESSION_SCENE4_EQ_MENU.stripStepQueryPurple;
+    } else if (soleEq != null && soleEq.highPassStep === stepHp) {
+      vG = LP_SESSION_SCENE4_EQ_MENU.stripStepCurrentG;
+    }
+    sendSessionPadLightingRowG(pkG, vG);
+    const pkH = padKeyFromPhysicalCell(dc, 7);
+    let vH = LP_SESSION_SCENE4_EQ_MENU.stripRowH;
+    const stepLp = dc + 1;
+    if (store.scene4LowPassStepSelection != null && store.scene4LowPassStepSelection === stepLp) {
+      vH =
+        store.scene4SelectedClipLoopIds.size > 0
+          ? LP_SESSION_SCENE4_EQ_MENU.stripStepApplyYellow
+          : LP_SESSION_SCENE4_EQ_MENU.stripStepQueryPurple;
+    } else if (soleEq != null && soleEq.lowPassStep === stepLp) {
+      vH = LP_SESSION_SCENE4_EQ_MENU.stripStepCurrentH;
+    }
+    sendSessionPadLightingRowH(pkH, vH);
+  }
+}
+
+function toggleScene4EqMenuLatch() {
+  const next = !store.scene4EqMenuLatched;
+  store.scene4EqMenuLatched = next;
+  setScene4EqMenuHeld(next);
+}
+
+function releaseScene4EqMenuPointer() {
+  if (!store.scene4EqMenuLatched) setScene4EqMenuHeld(false);
+}
+
+function setScene4EqMenuHeld(on) {
+  if (!on) store.scene4EqMenuLatched = false;
+  const wasHeld = store.scene4EqMenuHeld;
+  if (on) {
+    if (store.g7VolumeMenuHeld) setG7VolumeMenuHeld(false);
+    if (store.g6StereoPanMenuHeld) setG6StereoPanMenuHeld(false);
+    if (store.g4DistortionMenuHeld) setG4DistortionMenuHeld(false);
+    if (store.scene5CompressorMenuHeld) setScene5CompressorMenuHeld(false);
+    if (store.scene7DelayMenuHeld) setScene7DelayMenuHeld(false);
+    if (store.scene8ReverbMenuHeld) setScene8ReverbMenuHeld(false);
+    if (store.h8ClockStripMenuHeld) setH8ClockStripMenuHeld(false);
+    clearHStopModifierPhysicalCols();
+    if (store.clipKindLegendHeld) endClipKindLegendHold();
+    if (store.clipTypeLegendHeld) endClipTypeLegendHold();
+  }
+  store.scene4EqMenuHeld = on;
+  if (dom.grid) dom.grid.classList.toggle("scene4-eq-menu-active", on);
+  syncSidePanelLegendsWeb();
+  if (on) {
+    applyScene4EqMenuWebClasses();
+    if (store.midiAccess) {
+      refreshLaunchpadSceneSideCcLeds();
+      queueMicrotask(() => {
+        refreshLaunchpadSessionClipPadsHardwareOnly();
+        refreshLaunchpadScene4EqStripHardware();
+      });
+    }
+  } else if (wasHeld) {
+    store.scene4HighPassStepSelection = null;
+    store.scene4LowPassStepSelection = null;
+    store.scene4SelectedClipLoopIds.clear();
+    clearScene4EqMenuWebClasses();
+    if (store.midiAccess) {
+      refreshLaunchpadSceneSideCcLeds();
+      queueMicrotask(() => {
+        refreshAllLaunchpadClipLeds();
+        refreshLaunchpadSyncClockRowG(syncClockTickDisplayColumn8());
+        refreshLaunchpadStripRowHIdleHardware();
+      });
+    }
+  } else if (store.midiAccess) {
+    refreshLaunchpadSceneSideCcLeds();
+  }
+}
+
+function getClipCompressorParams(loopId) {
+  if (loopId == null) return defaultClipCompressorParams();
+  const sid = String(loopId);
+  if (store.scene5ClipCompressorByLoopId.has(sid)) {
+    return { ...defaultClipCompressorParams(), ...store.scene5ClipCompressorByLoopId.get(sid) };
+  }
+  const n = Number(loopId);
+  if (Number.isFinite(n) && store.scene5ClipCompressorByLoopId.has(n)) {
+    return { ...defaultClipCompressorParams(), ...store.scene5ClipCompressorByLoopId.get(n) };
+  }
+  return defaultClipCompressorParams();
+}
+
+function setClipCompressorParams(loopId, partial) {
+  const cur = getClipCompressorParams(loopId);
+  const next = {
+    thresholdStep: Math.max(1, Math.min(8, Math.floor(Number(partial.thresholdStep ?? cur.thresholdStep)) || 8)),
+    ratioStep: Math.max(1, Math.min(4, Math.floor(Number(partial.ratioStep ?? cur.ratioStep)) || 1)),
+    makeupStep: Math.max(1, Math.min(8, Math.floor(Number(partial.makeupStep ?? cur.makeupStep)) || 1)),
+  };
+  store.scene5ClipCompressorByLoopId.set(String(loopId), next);
+  if (Number.isFinite(Number(loopId))) store.scene5ClipCompressorByLoopId.set(Number(loopId), next);
+}
+
+function updateScene5CompressorVoiceForLoop(loopId) {
+  if (!store.pack || loopId == null) return;
+  const params = getClipCompressorParams(loopId);
+  const sid = String(loopId);
+  let playing = store.activeLoops.get(loopId);
+  if (!playing && Number.isFinite(Number(loopId))) playing = store.activeLoops.get(Number(loopId));
+  if (!playing) playing = store.activeLoops.get(sid);
+  if (playing) applyClipCompressorToVoice(playing, params);
+  const os = getActiveOneShot(loopId);
+  if (os) applyClipCompressorToVoice(os, params);
+}
+
+function soleScene5SelectedClipLoopId() {
+  if (store.scene5SelectedClipLoopIds.size !== 1) return null;
+  return [...store.scene5SelectedClipLoopIds][0];
+}
+
+function allScene5SelectedClipsHaveThreshold(step) {
+  if (store.scene5SelectedClipLoopIds.size === 0) return false;
+  for (const id of store.scene5SelectedClipLoopIds) {
+    if (getClipCompressorParams(id).thresholdStep !== step) return false;
+  }
+  return true;
+}
+
+function refreshClipCompressorLevelBadges() {
+  if (!dom.grid) return;
+  const def = defaultClipCompressorParams();
+  for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
+    const lid = el.dataset.loopId;
+    if (!lid) continue;
+    const p = getClipCompressorParams(lid);
+    let badge = el.querySelector(".comp-lvl");
+    if (
+      p.thresholdStep === def.thresholdStep &&
+      p.ratioStep === def.ratioStep &&
+      p.makeupStep === def.makeupStep
+    ) {
+      badge?.remove();
+      continue;
+    }
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "comp-lvl";
+      badge.setAttribute("aria-hidden", "true");
+      const eq = el.querySelector(".eq-lvl");
+      if (eq) eq.before(badge);
+      else {
+        const vol = el.querySelector(".vol-lvl");
+        if (vol) vol.before(badge);
+        else el.append(badge);
+      }
+    }
+    badge.textContent = `T${p.thresholdStep} R${p.ratioStep} M${p.makeupStep}`;
+    badge.title = `Compressor · threshold ${p.thresholdStep}/8 · ratio ${p.ratioStep}/4 · makeup ${p.makeupStep}/8`;
+  }
+}
+
+function applyScene5ThresholdStep(step) {
+  const s = Math.max(1, Math.min(8, Math.floor(Number(step)) || 1));
+  store.scene5ThresholdStepSelection = s;
+  if (store.scene5SelectedClipLoopIds.size > 0) {
+    for (const id of store.scene5SelectedClipLoopIds) {
+      setClipCompressorParams(id, { thresholdStep: s });
+      updateScene5CompressorVoiceForLoop(id);
+    }
+    if (store.scene5SelectedClipLoopIds.size === 1) store.scene5ThresholdStepSelection = null;
+  }
+  applyScene5CompressorMenuWebClasses();
+  refreshClipCompressorLevelBadges();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadScene5CompStripHardware();
+    });
+  }
+}
+
+function applyScene5RatioStep(step) {
+  const s = Math.max(1, Math.min(4, Math.floor(Number(step)) || 1));
+  store.scene5RatioStepSelection = s;
+  if (store.scene5SelectedClipLoopIds.size > 0) {
+    for (const id of store.scene5SelectedClipLoopIds) {
+      setClipCompressorParams(id, { ratioStep: s });
+      updateScene5CompressorVoiceForLoop(id);
+    }
+    if (store.scene5SelectedClipLoopIds.size === 1) store.scene5RatioStepSelection = null;
+  }
+  applyScene5CompressorMenuWebClasses();
+  refreshClipCompressorLevelBadges();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadScene5CompStripHardware();
+    });
+  }
+}
+
+function applyScene5MakeupStep(step) {
+  const s = Math.max(1, Math.min(8, Math.floor(Number(step)) || 1));
+  store.scene5MakeupStepSelection = s;
+  if (store.scene5SelectedClipLoopIds.size > 0) {
+    for (const id of store.scene5SelectedClipLoopIds) {
+      setClipCompressorParams(id, { makeupStep: s });
+      updateScene5CompressorVoiceForLoop(id);
+    }
+    if (store.scene5SelectedClipLoopIds.size === 1) store.scene5MakeupStepSelection = null;
+  }
+  applyScene5CompressorMenuWebClasses();
+  refreshClipCompressorLevelBadges();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadScene5CompStripHardware();
+    });
+  }
+}
+
+function toggleScene5ClipLoopSelection(loopId) {
+  const sid = String(loopId);
+  if (store.scene5SelectedClipLoopIds.has(sid)) store.scene5SelectedClipLoopIds.delete(sid);
+  else {
+    if (store.scene5SelectedClipLoopIds.size === 0) {
+      store.scene5ThresholdStepSelection = null;
+      store.scene5RatioStepSelection = null;
+      store.scene5MakeupStepSelection = null;
+    }
+    store.scene5SelectedClipLoopIds.add(sid);
+  }
+  if (store.scene5SelectedClipLoopIds.size === 1) {
+    store.scene5ThresholdStepSelection = null;
+    store.scene5RatioStepSelection = null;
+    store.scene5MakeupStepSelection = null;
+  }
+  applyScene5CompressorMenuWebClasses();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadScene5CompStripHardware();
+    });
+  }
+}
+
+function applyScene5CompressorMenuWebClasses() {
+  if (!dom.grid) return;
+  const soleId = soleScene5SelectedClipLoopId();
+  const sole = soleId != null ? getClipCompressorParams(soleId) : null;
+  for (const pad of dom.grid.querySelectorAll('button.pad.utility[data-utility-row="6"]')) {
+    if (pad.dataset.g8VolumeHoldStrip === "true") continue;
+    const dc = Number(pad.dataset.displayCol);
+    const nm = pad.querySelector(".nm");
+    if (nm && Number.isFinite(dc)) {
+      if (store.scene5CompressorMenuHeld) nm.textContent = `${dc + 1}/8`;
+      else if (pad.dataset.stripGNmDefault != null) nm.textContent = pad.dataset.stripGNmDefault;
+    }
+    pad.classList.toggle("scene5-g-thr-strip", store.scene5CompressorMenuHeld);
+    pad.classList.remove("scene5-g-strip-step-apply", "scene5-g-strip-step-query", "scene5-g-strip-step-current");
+    if (!store.scene5CompressorMenuHeld || !Number.isFinite(dc)) continue;
+    const step = dc + 1;
+    const stepOnPad =
+      store.scene5ThresholdStepSelection != null && store.scene5ThresholdStepSelection === step;
+    const isCurrent = !stepOnPad && allScene5SelectedClipsHaveThreshold(step);
+    pad.classList.toggle("scene5-g-strip-step-apply", stepOnPad && store.scene5SelectedClipLoopIds.size > 0);
+    pad.classList.toggle("scene5-g-strip-step-query", stepOnPad && store.scene5SelectedClipLoopIds.size === 0);
+    pad.classList.toggle("scene5-g-strip-step-current", isCurrent);
+    if (nm && isCurrent) nm.textContent = `${step}/8 ·`;
+  }
+  for (const pad of dom.grid.querySelectorAll('button.pad.utility[data-utility-row="7"]')) {
+    const dc = Number(pad.dataset.displayCol);
+    const nm = pad.querySelector(".nm");
+    if (!store.scene5CompressorMenuHeld || !Number.isFinite(dc)) {
+      pad.classList.remove(
+        "scene5-h-ratio-strip",
+        "scene5-h-makeup-strip",
+        "scene5-h-strip-lit",
+      );
+      continue;
+    }
+    pad.classList.add(dc <= 3 ? "scene5-h-ratio-strip" : "scene5-h-makeup-strip");
+    pad.classList.remove("scene5-h-strip-lit");
+    let lit = false;
+    if (dc <= 3) {
+      const r = dc + 1;
+      if (nm) nm.textContent = `R${r}`;
+      lit = sole != null && sole.ratioStep === r;
+    } else {
+      const m = dc + 1;
+      if (nm) nm.textContent = `M${m}`;
+      lit = sole != null && sole.makeupStep === m;
+    }
+    pad.classList.toggle("scene5-h-strip-lit", lit);
+  }
+  for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
+    const lid = el.dataset.loopId;
+    if (!lid) continue;
+    el.classList.toggle(
+      "scene5-clip-selected",
+      store.scene5CompressorMenuHeld && store.scene5SelectedClipLoopIds.has(lid),
+    );
+    const p = getClipCompressorParams(lid);
+    const thrMatch =
+      store.scene5CompressorMenuHeld &&
+      store.scene5ThresholdStepSelection != null &&
+      store.scene5SelectedClipLoopIds.size === 0 &&
+      p.thresholdStep === store.scene5ThresholdStepSelection;
+    el.classList.toggle("scene5-clip-comp-match", thrMatch);
+  }
+}
+
+function clearScene5CompressorMenuWebClasses() {
+  if (!dom.grid) return;
+  for (const pad of dom.grid.querySelectorAll("button.pad.utility")) {
+    pad.classList.remove(
+      "scene5-g-thr-strip",
+      "scene5-g-strip-step-apply",
+      "scene5-g-strip-step-query",
+      "scene5-g-strip-step-current",
+      "scene5-h-ratio-strip",
+      "scene5-h-makeup-strip",
+      "scene5-h-strip-lit",
+    );
+  }
+  for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
+    el.classList.remove("scene5-clip-selected", "scene5-clip-comp-match");
+  }
+}
+
+function refreshLaunchpadScene5CompStripHardware() {
+  if (!store.midiAccess || !store.pack || !store.scene5CompressorMenuHeld) return;
+  const sole =
+    store.scene5SelectedClipLoopIds.size === 1
+      ? getClipCompressorParams(soleScene5SelectedClipLoopId())
+      : null;
+  const soleThr = sole?.thresholdStep ?? null;
+  for (let dc = 0; dc < 8; dc += 1) {
+    const pkG = padKeyFromPhysicalCell(dc, 6);
+    let vG = LP_SESSION_SCENE5_COMP_MENU.stripRowG;
+    const stepG = dc + 1;
+    if (store.scene5ThresholdStepSelection != null && store.scene5ThresholdStepSelection === stepG) {
+      vG =
+        store.scene5SelectedClipLoopIds.size > 0
+          ? LP_SESSION_SCENE5_COMP_MENU.stripStepApplyYellow
+          : LP_SESSION_SCENE5_COMP_MENU.stripStepQueryPurple;
+    } else if (soleThr != null && soleThr === stepG) {
+      vG = LP_SESSION_SCENE5_COMP_MENU.stripStepCurrentG;
+    }
+    sendSessionPadLightingRowG(pkG, vG);
+    const pkH = padKeyFromPhysicalCell(dc, 7);
+    let vH = LP_SESSION_SCENE5_COMP_MENU.stripRowH;
+    if (sole != null) {
+      if (dc <= 3 && sole.ratioStep === dc + 1) {
+        vH = LP_SESSION_SCENE5_COMP_MENU.stripRatioLit[dc];
+      } else if (dc >= 4 && sole.makeupStep === dc + 1) {
+        vH = LP_SESSION_SCENE5_COMP_MENU.stripMakeupLit[dc - 4];
+      }
+    }
+    sendSessionPadLightingRowH(pkH, vH);
+  }
+}
+
+function toggleScene5CompressorMenuLatch() {
+  const next = !store.scene5CompressorMenuLatched;
+  store.scene5CompressorMenuLatched = next;
+  setScene5CompressorMenuHeld(next);
+}
+
+function releaseScene5CompressorMenuPointer() {
+  if (!store.scene5CompressorMenuLatched) setScene5CompressorMenuHeld(false);
+}
+
+function setScene5CompressorMenuHeld(on) {
+  if (!on) store.scene5CompressorMenuLatched = false;
+  const wasHeld = store.scene5CompressorMenuHeld;
+  if (on) {
+    if (store.g7VolumeMenuHeld) setG7VolumeMenuHeld(false);
+    if (store.g6StereoPanMenuHeld) setG6StereoPanMenuHeld(false);
+    if (store.scene4EqMenuHeld) setScene4EqMenuHeld(false);
+    if (store.g4DistortionMenuHeld) setG4DistortionMenuHeld(false);
+    if (store.scene7DelayMenuHeld) setScene7DelayMenuHeld(false);
+    if (store.scene8ReverbMenuHeld) setScene8ReverbMenuHeld(false);
+    if (store.h8ClockStripMenuHeld) setH8ClockStripMenuHeld(false);
+    clearHStopModifierPhysicalCols();
+    if (store.clipKindLegendHeld) endClipKindLegendHold();
+    if (store.clipTypeLegendHeld) endClipTypeLegendHold();
+  }
+  store.scene5CompressorMenuHeld = on;
+  if (dom.grid) dom.grid.classList.toggle("scene5-comp-menu-active", on);
+  syncSidePanelLegendsWeb();
+  if (on) {
+    applyScene5CompressorMenuWebClasses();
+    if (store.midiAccess) {
+      refreshLaunchpadSceneSideCcLeds();
+      queueMicrotask(() => {
+        refreshLaunchpadSessionClipPadsHardwareOnly();
+        refreshLaunchpadScene5CompStripHardware();
+      });
+    }
+  } else if (wasHeld) {
+    store.scene5ThresholdStepSelection = null;
+    store.scene5RatioStepSelection = null;
+    store.scene5MakeupStepSelection = null;
+    store.scene5SelectedClipLoopIds.clear();
+    clearScene5CompressorMenuWebClasses();
+    if (store.midiAccess) {
+      refreshLaunchpadSceneSideCcLeds();
+      queueMicrotask(() => {
+        refreshAllLaunchpadClipLeds();
+        refreshLaunchpadSyncClockRowG(syncClockTickDisplayColumn8());
+        refreshLaunchpadStripRowHIdleHardware();
+      });
+    }
+  } else if (store.midiAccess) {
+    refreshLaunchpadSceneSideCcLeds();
+  }
+}
+
+function getClipDelayParams(loopId) {
+  if (loopId == null) return defaultClipDelayParams();
+  const sid = String(loopId);
+  if (store.scene7ClipDelayByLoopId.has(sid)) {
+    return { ...defaultClipDelayParams(), ...store.scene7ClipDelayByLoopId.get(sid) };
+  }
+  const n = Number(loopId);
+  if (Number.isFinite(n) && store.scene7ClipDelayByLoopId.has(n)) {
+    return { ...defaultClipDelayParams(), ...store.scene7ClipDelayByLoopId.get(n) };
+  }
+  return defaultClipDelayParams();
+}
+
+function setClipDelayParams(loopId, partial) {
+  const cur = getClipDelayParams(loopId);
+  const next = {
+    timeStep: Math.max(1, Math.min(4, Math.floor(Number(partial.timeStep ?? cur.timeStep)) || 1)),
+    feedbackStep: Math.max(1, Math.min(4, Math.floor(Number(partial.feedbackStep ?? cur.feedbackStep)) || 1)),
+    mixStep: Math.max(1, Math.min(4, Math.floor(Number(partial.mixStep ?? cur.mixStep)) || 1)),
+    toneStep: Math.max(1, Math.min(4, Math.floor(Number(partial.toneStep ?? cur.toneStep)) || 4)),
+  };
+  store.scene7ClipDelayByLoopId.set(String(loopId), next);
+  if (Number.isFinite(Number(loopId))) store.scene7ClipDelayByLoopId.set(Number(loopId), next);
+}
+
+function updateScene7DelayVoiceForLoop(loopId) {
+  if (!store.pack || loopId == null) return;
+  const params = getClipDelayParams(loopId);
+  const sid = String(loopId);
+  let playing = store.activeLoops.get(loopId);
+  if (!playing && Number.isFinite(Number(loopId))) playing = store.activeLoops.get(Number(loopId));
+  if (!playing) playing = store.activeLoops.get(sid);
+  if (playing) applyClipDelayToVoice(playing, params);
+  const os = getActiveOneShot(loopId);
+  if (os) applyClipDelayToVoice(os, params);
+}
+
+function soleScene7SelectedClipLoopId() {
+  if (store.scene7SelectedClipLoopIds.size !== 1) return null;
+  return [...store.scene7SelectedClipLoopIds][0];
+}
+
+function refreshClipDelayLevelBadges() {
+  if (!dom.grid) return;
+  const def = defaultClipDelayParams();
+  for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
+    const lid = el.dataset.loopId;
+    if (!lid) continue;
+    const p = getClipDelayParams(lid);
+    let badge = el.querySelector(".dly-lvl");
+    if (
+      p.timeStep === def.timeStep &&
+      p.feedbackStep === def.feedbackStep &&
+      p.mixStep === def.mixStep &&
+      p.toneStep === def.toneStep
+    ) {
+      badge?.remove();
+      continue;
+    }
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "dly-lvl";
+      badge.setAttribute("aria-hidden", "true");
+      const comp = el.querySelector(".comp-lvl");
+      if (comp) comp.before(badge);
+      else {
+        const eq = el.querySelector(".eq-lvl");
+        if (eq) eq.before(badge);
+        else el.append(badge);
+      }
+    }
+    badge.textContent = `T${p.timeStep} F${p.feedbackStep} M${p.mixStep} N${p.toneStep}`;
+    badge.title = `Delay · time ${p.timeStep}/4 · feedback ${p.feedbackStep}/4 · mix ${p.mixStep}/4 · tone ${p.toneStep}/4`;
+  }
+}
+
+function applyScene7TimeStep(step) {
+  applyScene7DelayParamToSelection({ timeStep: step }, "time");
+}
+
+function applyScene7FeedbackStep(step) {
+  applyScene7DelayParamToSelection({ feedbackStep: step }, "feedback");
+}
+
+function applyScene7MixStep(step) {
+  applyScene7DelayParamToSelection({ mixStep: step }, "mix");
+}
+
+function applyScene7ToneStep(step) {
+  applyScene7DelayParamToSelection({ toneStep: step }, "tone");
+}
+
+function applyScene7DelayParamToSelection(partial, kind) {
+  if (kind === "time") {
+    const s = Math.max(1, Math.min(4, Math.floor(Number(partial.timeStep)) || 1));
+    store.scene7TimeStepSelection = s;
+    if (store.scene7SelectedClipLoopIds.size > 0) {
+      for (const id of store.scene7SelectedClipLoopIds) {
+        setClipDelayParams(id, { timeStep: s });
+        updateScene7DelayVoiceForLoop(id);
+      }
+      if (store.scene7SelectedClipLoopIds.size === 1) store.scene7TimeStepSelection = null;
+    }
+  } else if (kind === "feedback") {
+    const s = Math.max(1, Math.min(4, Math.floor(Number(partial.feedbackStep)) || 1));
+    store.scene7FeedbackStepSelection = s;
+    if (store.scene7SelectedClipLoopIds.size > 0) {
+      for (const id of store.scene7SelectedClipLoopIds) {
+        setClipDelayParams(id, { feedbackStep: s });
+        updateScene7DelayVoiceForLoop(id);
+      }
+      if (store.scene7SelectedClipLoopIds.size === 1) store.scene7FeedbackStepSelection = null;
+    }
+  } else if (kind === "mix") {
+    const s = Math.max(1, Math.min(4, Math.floor(Number(partial.mixStep)) || 1));
+    store.scene7MixStepSelection = s;
+    if (store.scene7SelectedClipLoopIds.size > 0) {
+      for (const id of store.scene7SelectedClipLoopIds) {
+        setClipDelayParams(id, { mixStep: s });
+        updateScene7DelayVoiceForLoop(id);
+      }
+      if (store.scene7SelectedClipLoopIds.size === 1) store.scene7MixStepSelection = null;
+    }
+  } else if (kind === "tone") {
+    const s = Math.max(1, Math.min(4, Math.floor(Number(partial.toneStep)) || 1));
+    store.scene7ToneStepSelection = s;
+    if (store.scene7SelectedClipLoopIds.size > 0) {
+      for (const id of store.scene7SelectedClipLoopIds) {
+        setClipDelayParams(id, { toneStep: s });
+        updateScene7DelayVoiceForLoop(id);
+      }
+      if (store.scene7SelectedClipLoopIds.size === 1) store.scene7ToneStepSelection = null;
+    }
+  }
+  applyScene7DelayMenuWebClasses();
+  refreshClipDelayLevelBadges();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadScene7DelayStripHardware();
+    });
+  }
+}
+
+function applyScene7StripG(dc) {
+  if (dc <= 3) applyScene7TimeStep(dc + 1);
+  else applyScene7FeedbackStep(dc - 3);
+}
+
+function applyScene7StripH(dc) {
+  if (dc <= 3) applyScene7MixStep(dc + 1);
+  else applyScene7ToneStep(dc - 3);
+}
+
+function toggleScene7ClipLoopSelection(loopId) {
+  const sid = String(loopId);
+  if (store.scene7SelectedClipLoopIds.has(sid)) store.scene7SelectedClipLoopIds.delete(sid);
+  else {
+    if (store.scene7SelectedClipLoopIds.size === 0) {
+      store.scene7TimeStepSelection = null;
+      store.scene7FeedbackStepSelection = null;
+      store.scene7MixStepSelection = null;
+      store.scene7ToneStepSelection = null;
+    }
+    store.scene7SelectedClipLoopIds.add(sid);
+  }
+  if (store.scene7SelectedClipLoopIds.size === 1) {
+    store.scene7TimeStepSelection = null;
+    store.scene7FeedbackStepSelection = null;
+    store.scene7MixStepSelection = null;
+    store.scene7ToneStepSelection = null;
+  }
+  applyScene7DelayMenuWebClasses();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadScene7DelayStripHardware();
+    });
+  }
+}
+
+function applyScene7DelayMenuWebClasses() {
+  if (!dom.grid) return;
+  const sole = soleScene7SelectedClipLoopId() != null ? getClipDelayParams(soleScene7SelectedClipLoopId()) : null;
+  for (const pad of dom.grid.querySelectorAll('button.pad.utility[data-utility-row="6"]')) {
+    if (pad.dataset.g8VolumeHoldStrip === "true") continue;
+    const dc = Number(pad.dataset.displayCol);
+    const nm = pad.querySelector(".nm");
+    if (!Number.isFinite(dc)) continue;
+    pad.classList.toggle("scene7-delay-menu-held", store.scene7DelayMenuHeld);
+    pad.classList.remove(
+      "scene7-g-time-zone",
+      "scene7-g-fb-zone",
+      "scene7-g-strip-lit",
+      "scene7-g-strip-step-apply",
+      "scene7-g-strip-step-query",
+    );
+    if (!store.scene7DelayMenuHeld) {
+      if (nm && pad.dataset.stripGNmDefault != null) nm.textContent = pad.dataset.stripGNmDefault;
+      continue;
+    }
+    const isTime = dc <= 3;
+    pad.classList.add(isTime ? "scene7-g-time-zone" : "scene7-g-fb-zone");
+    const step = isTime ? dc + 1 : dc - 3;
+    if (nm) nm.textContent = isTime ? `T${step}` : `F${step}`;
+    let lit = false;
+    if (sole) lit = isTime ? sole.timeStep === step : sole.feedbackStep === step;
+    const pending =
+      (isTime && store.scene7TimeStepSelection === step) ||
+      (!isTime && store.scene7FeedbackStepSelection === step);
+    pad.classList.toggle("scene7-g-strip-lit", lit && !pending);
+    pad.classList.toggle("scene7-g-strip-step-apply", pending && store.scene7SelectedClipLoopIds.size > 0);
+    pad.classList.toggle("scene7-g-strip-step-query", pending && store.scene7SelectedClipLoopIds.size === 0);
+  }
+  for (const pad of dom.grid.querySelectorAll('button.pad.utility[data-utility-row="7"]')) {
+    const dc = Number(pad.dataset.displayCol);
+    const nm = pad.querySelector(".nm");
+    if (!Number.isFinite(dc)) continue;
+    pad.classList.remove(
+      "scene7-h-mix-zone",
+      "scene7-h-tone-zone",
+      "scene7-h-strip-lit",
+      "scene7-h-strip-step-apply",
+      "scene7-h-strip-step-query",
+    );
+    if (!store.scene7DelayMenuHeld) {
+      if (nm && pad.dataset.stripHNmDefault != null) nm.textContent = pad.dataset.stripHNmDefault;
+      continue;
+    }
+    const isMix = dc <= 3;
+    pad.classList.add(isMix ? "scene7-h-mix-zone" : "scene7-h-tone-zone");
+    const step = isMix ? dc + 1 : dc - 3;
+    if (nm) nm.textContent = isMix ? `M${step}` : `N${step}`;
+    let lit = false;
+    if (sole) lit = isMix ? sole.mixStep === step : sole.toneStep === step;
+    const pending =
+      (isMix && store.scene7MixStepSelection === step) ||
+      (!isMix && store.scene7ToneStepSelection === step);
+    pad.classList.toggle("scene7-h-strip-lit", lit && !pending);
+    pad.classList.toggle("scene7-h-strip-step-apply", pending && store.scene7SelectedClipLoopIds.size > 0);
+    pad.classList.toggle("scene7-h-strip-step-query", pending && store.scene7SelectedClipLoopIds.size === 0);
+  }
+  for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
+    const lid = el.dataset.loopId;
+    if (!lid) continue;
+    el.classList.toggle(
+      "scene7-clip-selected",
+      store.scene7DelayMenuHeld && store.scene7SelectedClipLoopIds.has(lid),
+    );
+    const p = getClipDelayParams(lid);
+    const match =
+      store.scene7DelayMenuHeld &&
+      store.scene7SelectedClipLoopIds.size === 0 &&
+      ((store.scene7TimeStepSelection != null && p.timeStep === store.scene7TimeStepSelection) ||
+        (store.scene7FeedbackStepSelection != null && p.feedbackStep === store.scene7FeedbackStepSelection) ||
+        (store.scene7MixStepSelection != null && p.mixStep === store.scene7MixStepSelection) ||
+        (store.scene7ToneStepSelection != null && p.toneStep === store.scene7ToneStepSelection));
+    el.classList.toggle("scene7-clip-delay-match", match);
+  }
+}
+
+function clearScene7DelayMenuWebClasses() {
+  if (!dom.grid) return;
+  for (const pad of dom.grid.querySelectorAll("button.pad.utility")) {
+    pad.classList.remove(
+      "scene7-delay-menu-held",
+      "scene7-g-time-zone",
+      "scene7-g-fb-zone",
+      "scene7-g-strip-lit",
+      "scene7-g-strip-step-apply",
+      "scene7-g-strip-step-query",
+      "scene7-h-mix-zone",
+      "scene7-h-tone-zone",
+      "scene7-h-strip-lit",
+      "scene7-h-strip-step-apply",
+      "scene7-h-strip-step-query",
+    );
+  }
+  for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
+    el.classList.remove("scene7-clip-selected", "scene7-clip-delay-match");
+  }
+}
+
+function refreshLaunchpadScene7DelayStripHardware() {
+  if (!store.midiAccess || !store.pack || !store.scene7DelayMenuHeld) return;
+  const sole = soleScene7SelectedClipLoopId() != null ? getClipDelayParams(soleScene7SelectedClipLoopId()) : null;
+  for (let dc = 0; dc < 8; dc += 1) {
+    const pkG = padKeyFromPhysicalCell(dc, 6);
+    const isTime = dc <= 3;
+    let vG = isTime ? LP_SESSION_SCENE7_DELAY_MENU.stripGTime : LP_SESSION_SCENE7_DELAY_MENU.stripGFeedback;
+    const stepG = isTime ? dc + 1 : dc - 3;
+    const pendingG =
+      (isTime && store.scene7TimeStepSelection === stepG) ||
+      (!isTime && store.scene7FeedbackStepSelection === stepG);
+    if (pendingG) {
+      vG =
+        store.scene7SelectedClipLoopIds.size > 0
+          ? LP_SESSION_SCENE7_DELAY_MENU.stripStepApplyYellow
+          : LP_SESSION_SCENE7_DELAY_MENU.stripStepQueryPurple;
+    } else if (sole && (isTime ? sole.timeStep === stepG : sole.feedbackStep === stepG)) {
+      vG = isTime
+        ? LP_SESSION_SCENE7_DELAY_MENU.stripTimeLit[dc]
+        : LP_SESSION_SCENE7_DELAY_MENU.stripFeedbackLit[dc - 4];
+    }
+    sendSessionPadLightingRowG(pkG, vG);
+    const pkH = padKeyFromPhysicalCell(dc, 7);
+    const isMix = dc <= 3;
+    let vH = isMix ? LP_SESSION_SCENE7_DELAY_MENU.stripHMix : LP_SESSION_SCENE7_DELAY_MENU.stripHTone;
+    const stepH = isMix ? dc + 1 : dc - 3;
+    const pendingH =
+      (isMix && store.scene7MixStepSelection === stepH) ||
+      (!isMix && store.scene7ToneStepSelection === stepH);
+    if (pendingH) {
+      vH =
+        store.scene7SelectedClipLoopIds.size > 0
+          ? LP_SESSION_SCENE7_DELAY_MENU.stripStepApplyYellow
+          : LP_SESSION_SCENE7_DELAY_MENU.stripStepQueryPurple;
+    } else if (sole && (isMix ? sole.mixStep === stepH : sole.toneStep === stepH)) {
+      vH = isMix
+        ? LP_SESSION_SCENE7_DELAY_MENU.stripMixLit[dc]
+        : LP_SESSION_SCENE7_DELAY_MENU.stripToneLit[dc - 4];
+    }
+    sendSessionPadLightingRowH(pkH, vH);
+  }
+}
+
+function toggleScene7DelayMenuLatch() {
+  const next = !store.scene7DelayMenuLatched;
+  store.scene7DelayMenuLatched = next;
+  setScene7DelayMenuHeld(next);
+}
+
+function releaseScene7DelayMenuPointer() {
+  if (!store.scene7DelayMenuLatched) setScene7DelayMenuHeld(false);
+}
+
+function setScene7DelayMenuHeld(on) {
+  if (!on) store.scene7DelayMenuLatched = false;
+  const wasHeld = store.scene7DelayMenuHeld;
+  if (on) {
+    if (store.g7VolumeMenuHeld) setG7VolumeMenuHeld(false);
+    if (store.g6StereoPanMenuHeld) setG6StereoPanMenuHeld(false);
+    if (store.scene4EqMenuHeld) setScene4EqMenuHeld(false);
+    if (store.scene5CompressorMenuHeld) setScene5CompressorMenuHeld(false);
+    if (store.g4DistortionMenuHeld) setG4DistortionMenuHeld(false);
+    if (store.scene8ReverbMenuHeld) setScene8ReverbMenuHeld(false);
+    if (store.h8ClockStripMenuHeld) setH8ClockStripMenuHeld(false);
+    clearHStopModifierPhysicalCols();
+    if (store.clipKindLegendHeld) endClipKindLegendHold();
+    if (store.clipTypeLegendHeld) endClipTypeLegendHold();
+  }
+  store.scene7DelayMenuHeld = on;
+  if (dom.grid) dom.grid.classList.toggle("scene7-delay-menu-active", on);
+  syncSidePanelLegendsWeb();
+  if (on) {
+    applyScene7DelayMenuWebClasses();
+    if (store.midiAccess) {
+      refreshLaunchpadSceneSideCcLeds();
+      queueMicrotask(() => {
+        refreshLaunchpadSessionClipPadsHardwareOnly();
+        refreshLaunchpadScene7DelayStripHardware();
+      });
+    }
+  } else if (wasHeld) {
+    store.scene7TimeStepSelection = null;
+    store.scene7FeedbackStepSelection = null;
+    store.scene7MixStepSelection = null;
+    store.scene7ToneStepSelection = null;
+    store.scene7SelectedClipLoopIds.clear();
+    clearScene7DelayMenuWebClasses();
+    if (store.midiAccess) {
+      refreshLaunchpadSceneSideCcLeds();
+      queueMicrotask(() => {
+        refreshAllLaunchpadClipLeds();
+        refreshLaunchpadSyncClockRowG(syncClockTickDisplayColumn8());
+        refreshLaunchpadStripRowHIdleHardware();
+      });
+    }
+  } else if (store.midiAccess) {
+    refreshLaunchpadSceneSideCcLeds();
+  }
+}
+
+function getClipReverbParams(loopId) {
+  if (loopId == null) return defaultClipReverbParams();
+  const sid = String(loopId);
+  const n = Number(loopId);
+  if (store.scene8ClipReverbByLoopId.has(sid)) {
+    return { ...defaultClipReverbParams(), ...store.scene8ClipReverbByLoopId.get(sid) };
+  }
+  if (Number.isFinite(n) && store.scene8ClipReverbByLoopId.has(n)) {
+    return { ...defaultClipReverbParams(), ...store.scene8ClipReverbByLoopId.get(n) };
+  }
+  return defaultClipReverbParams();
+}
+
+function setClipReverbParams(loopId, partial) {
+  const cur = getClipReverbParams(loopId);
+  const next = {
+    decayStep: Math.max(1, Math.min(4, Math.floor(Number(partial.decayStep ?? cur.decayStep)) || 1)),
+    roomStep: Math.max(1, Math.min(4, Math.floor(Number(partial.roomStep ?? cur.roomStep)) || 1)),
+    preDelayStep: Math.max(1, Math.min(4, Math.floor(Number(partial.preDelayStep ?? cur.preDelayStep)) || 1)),
+    mixStep: Math.max(1, Math.min(4, Math.floor(Number(partial.mixStep ?? cur.mixStep)) || 1)),
+  };
+  store.scene8ClipReverbByLoopId.set(String(loopId), next);
+  if (Number.isFinite(Number(loopId))) store.scene8ClipReverbByLoopId.set(Number(loopId), next);
+}
+
+function updateScene8ReverbVoiceForLoop(loopId) {
+  if (!store.pack || loopId == null) return;
+  const params = getClipReverbParams(loopId);
+  const sid = String(loopId);
+  let playing = store.activeLoops.get(loopId);
+  if (!playing && Number.isFinite(Number(loopId))) playing = store.activeLoops.get(Number(loopId));
+  if (!playing) playing = store.activeLoops.get(sid);
+  if (playing) applyClipReverbToVoice(playing, params);
+  const os = getActiveOneShot(loopId);
+  if (os) applyClipReverbToVoice(os, params);
+}
+
+function soleScene8SelectedClipLoopId() {
+  if (store.scene8SelectedClipLoopIds.size !== 1) return null;
+  return [...store.scene8SelectedClipLoopIds][0];
+}
+
+function refreshClipReverbLevelBadges() {
+  if (!dom.grid) return;
+  const def = defaultClipReverbParams();
+  for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
+    const lid = el.dataset.loopId;
+    if (!lid) continue;
+    const p = getClipReverbParams(lid);
+    let badge = el.querySelector(".rev-lvl");
+    if (
+      p.decayStep === def.decayStep &&
+      p.roomStep === def.roomStep &&
+      p.preDelayStep === def.preDelayStep &&
+      p.mixStep === def.mixStep
+    ) {
+      badge?.remove();
+      continue;
+    }
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "rev-lvl";
+      badge.setAttribute("aria-hidden", "true");
+      const dly = el.querySelector(".dly-lvl");
+      if (dly) dly.before(badge);
+      else {
+        const comp = el.querySelector(".comp-lvl");
+        if (comp) comp.before(badge);
+        else el.append(badge);
+      }
+    }
+    badge.textContent = `D${p.decayStep} R${p.roomStep} P${p.preDelayStep} W${p.mixStep}`;
+    badge.title = `Reverb · decay ${p.decayStep}/4 · room ${p.roomStep}/4 · pre-delay ${p.preDelayStep}/4 · wet ${p.mixStep}/4`;
+  }
+}
+
+function applyScene8DecayStep(step) {
+  applyScene8ReverbParamToSelection({ decayStep: step }, "decay");
+}
+
+function applyScene8RoomStep(step) {
+  applyScene8ReverbParamToSelection({ roomStep: step }, "room");
+}
+
+function applyScene8PreDelayStep(step) {
+  applyScene8ReverbParamToSelection({ preDelayStep: step }, "preDelay");
+}
+
+function applyScene8MixStep(step) {
+  applyScene8ReverbParamToSelection({ mixStep: step }, "mix");
+}
+
+function applyScene8ReverbParamToSelection(partial, kind) {
+  const s = Math.max(1, Math.min(4, Math.floor(Number(Object.values(partial)[0])) || 1));
+  if (kind === "decay") {
+    store.scene8DecayStepSelection = s;
+    if (store.scene8SelectedClipLoopIds.size > 0) {
+      for (const id of store.scene8SelectedClipLoopIds) {
+        setClipReverbParams(id, partial);
+        updateScene8ReverbVoiceForLoop(id);
+      }
+      if (store.scene8SelectedClipLoopIds.size === 1) store.scene8DecayStepSelection = null;
+    }
+  } else if (kind === "room") {
+    store.scene8RoomStepSelection = s;
+    if (store.scene8SelectedClipLoopIds.size > 0) {
+      for (const id of store.scene8SelectedClipLoopIds) {
+        setClipReverbParams(id, partial);
+        updateScene8ReverbVoiceForLoop(id);
+      }
+      if (store.scene8SelectedClipLoopIds.size === 1) store.scene8RoomStepSelection = null;
+    }
+  } else if (kind === "preDelay") {
+    store.scene8PreDelayStepSelection = s;
+    if (store.scene8SelectedClipLoopIds.size > 0) {
+      for (const id of store.scene8SelectedClipLoopIds) {
+        setClipReverbParams(id, partial);
+        updateScene8ReverbVoiceForLoop(id);
+      }
+      if (store.scene8SelectedClipLoopIds.size === 1) store.scene8PreDelayStepSelection = null;
+    }
+  } else if (kind === "mix") {
+    store.scene8MixStepSelection = s;
+    if (store.scene8SelectedClipLoopIds.size > 0) {
+      for (const id of store.scene8SelectedClipLoopIds) {
+        setClipReverbParams(id, partial);
+        updateScene8ReverbVoiceForLoop(id);
+      }
+      if (store.scene8SelectedClipLoopIds.size === 1) store.scene8MixStepSelection = null;
+    }
+  }
+  applyScene8ReverbMenuWebClasses();
+  refreshClipReverbLevelBadges();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadScene8ReverbStripHardware();
+    });
+  }
+}
+
+function applyScene8StripG(dc) {
+  if (dc <= 3) applyScene8DecayStep(dc + 1);
+  else applyScene8RoomStep(dc - 3);
+}
+
+function applyScene8StripH(dc) {
+  if (dc <= 3) applyScene8PreDelayStep(dc + 1);
+  else applyScene8MixStep(dc - 3);
+}
+
+function toggleScene8ClipLoopSelection(loopId) {
+  const sid = String(loopId);
+  if (store.scene8SelectedClipLoopIds.has(sid)) store.scene8SelectedClipLoopIds.delete(sid);
+  else {
+    if (store.scene8SelectedClipLoopIds.size === 0) {
+      store.scene8DecayStepSelection = null;
+      store.scene8RoomStepSelection = null;
+      store.scene8PreDelayStepSelection = null;
+      store.scene8MixStepSelection = null;
+    }
+    store.scene8SelectedClipLoopIds.add(sid);
+  }
+  if (store.scene8SelectedClipLoopIds.size === 1) {
+    store.scene8DecayStepSelection = null;
+    store.scene8RoomStepSelection = null;
+    store.scene8PreDelayStepSelection = null;
+    store.scene8MixStepSelection = null;
+  }
+  applyScene8ReverbMenuWebClasses();
+  if (store.midiAccess) {
+    queueMicrotask(() => {
+      refreshLaunchpadSessionClipPadsHardwareOnly();
+      refreshLaunchpadScene8ReverbStripHardware();
+    });
+  }
+}
+
+function applyScene8ReverbMenuWebClasses() {
+  if (!dom.grid) return;
+  syncSidePanelLegendsWeb();
+  for (const pad of dom.grid.querySelectorAll('button.pad.utility[data-g8-volume-hold-strip="true"]')) {
+    const nm = pad.querySelector(".nm");
+    if (nm) nm.textContent = store.scene8ReverbMenuHeld ? "reverb ·" : pad.dataset.stripG8NmDefault ?? "volume";
+    pad.classList.toggle("scene8-reverb-menu-held", store.scene8ReverbMenuHeld);
+    pad.setAttribute("aria-pressed", store.scene8ReverbMenuHeld ? "true" : "false");
+  }
+  for (const pad of dom.grid.querySelectorAll('button.pad.utility[data-utility-row="6"]')) {
+    if (pad.dataset.g8VolumeHoldStrip === "true") continue;
+    const dc = Number(pad.dataset.displayCol);
+    const nm = pad.querySelector(".nm");
+    if (!nm || !Number.isFinite(dc)) continue;
+    pad.classList.remove(
+      "scene8-g-decay-zone",
+      "scene8-g-room-zone",
+      "scene8-g-strip-lit",
+      "scene8-g-strip-step-apply",
+      "scene8-g-strip-step-query",
+    );
+    if (!store.scene8ReverbMenuHeld) {
+      const defaultNm = pad.dataset.stripGNmDefault ?? "mute col";
+      nm.textContent = defaultNm;
+      continue;
+    }
+    const isDecay = dc <= 3;
+    pad.classList.add(isDecay ? "scene8-g-decay-zone" : "scene8-g-room-zone");
+    nm.textContent = isDecay ? `decay ${dc + 1}` : `room ${dc - 3}`;
+    const step = isDecay ? dc + 1 : dc - 3;
+    const sole = soleScene8SelectedClipLoopId();
+    const lit = sole != null && (isDecay ? getClipReverbParams(sole).decayStep === step : getClipReverbParams(sole).roomStep === step);
+    const pending =
+      (isDecay && store.scene8DecayStepSelection === step) ||
+      (!isDecay && store.scene8RoomStepSelection === step);
+    pad.classList.toggle("scene8-g-strip-lit", lit && !pending);
+    pad.classList.toggle("scene8-g-strip-step-apply", pending && store.scene8SelectedClipLoopIds.size > 0);
+    pad.classList.toggle("scene8-g-strip-step-query", pending && store.scene8SelectedClipLoopIds.size === 0);
+  }
+  for (const pad of dom.grid.querySelectorAll('button.pad.utility[data-utility-row="7"]')) {
+    if (pad.dataset.h8ClockMenuStrip === "true") continue;
+    const dc = Number(pad.dataset.displayCol);
+    const nm = pad.querySelector(".nm");
+    if (!nm || !Number.isFinite(dc)) continue;
+    pad.classList.remove(
+      "scene8-h-predelay-zone",
+      "scene8-h-wet-zone",
+      "scene8-h-strip-lit",
+      "scene8-h-strip-step-apply",
+      "scene8-h-strip-step-query",
+    );
+    if (!store.scene8ReverbMenuHeld) {
+      const defaultNm = pad.dataset.stripHNmDefault ?? "stop col";
+      nm.textContent = defaultNm;
+      continue;
+    }
+    const isPre = dc <= 3;
+    pad.classList.add(isPre ? "scene8-h-predelay-zone" : "scene8-h-wet-zone");
+    nm.textContent = isPre ? `pre ${dc + 1}` : `wet ${dc - 3}`;
+    const step = isPre ? dc + 1 : dc - 3;
+    const sole = soleScene8SelectedClipLoopId();
+    const lit = sole != null && (isPre ? getClipReverbParams(sole).preDelayStep === step : getClipReverbParams(sole).mixStep === step);
+    const pending =
+      (isPre && store.scene8PreDelayStepSelection === step) ||
+      (!isPre && store.scene8MixStepSelection === step);
+    pad.classList.toggle("scene8-h-strip-lit", lit && !pending);
+    pad.classList.toggle("scene8-h-strip-step-apply", pending && store.scene8SelectedClipLoopIds.size > 0);
+    pad.classList.toggle("scene8-h-strip-step-query", pending && store.scene8SelectedClipLoopIds.size === 0);
+  }
+  for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
+    const lid = el.dataset.loopId;
+    if (!lid) continue;
+    el.classList.toggle(
+      "scene8-clip-selected",
+      store.scene8ReverbMenuHeld && store.scene8SelectedClipLoopIds.has(lid),
+    );
+    const p = getClipReverbParams(lid);
+    const match =
+      store.scene8ReverbMenuHeld &&
+      store.scene8SelectedClipLoopIds.size === 0 &&
+      ((store.scene8DecayStepSelection != null && p.decayStep === store.scene8DecayStepSelection) ||
+        (store.scene8RoomStepSelection != null && p.roomStep === store.scene8RoomStepSelection) ||
+        (store.scene8PreDelayStepSelection != null && p.preDelayStep === store.scene8PreDelayStepSelection) ||
+        (store.scene8MixStepSelection != null && p.mixStep === store.scene8MixStepSelection));
+    el.classList.toggle("scene8-clip-reverb-match", match);
+  }
+}
+
+function clearScene8ReverbMenuWebClasses() {
+  if (!dom.grid) return;
+  for (const pad of dom.grid.querySelectorAll("button.pad.utility")) {
+    pad.classList.remove(
+      "scene8-reverb-menu-held",
+      "scene8-g-decay-zone",
+      "scene8-g-room-zone",
+      "scene8-g-strip-lit",
+      "scene8-g-strip-step-apply",
+      "scene8-g-strip-step-query",
+      "scene8-h-predelay-zone",
+      "scene8-h-wet-zone",
+      "scene8-h-strip-lit",
+      "scene8-h-strip-step-apply",
+      "scene8-h-strip-step-query",
+    );
+  }
+  for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
+    el.classList.remove("scene8-clip-selected", "scene8-clip-reverb-match");
+  }
+}
+
+function refreshLaunchpadScene8ReverbStripHardware() {
+  if (!store.midiAccess || !store.pack || !store.scene8ReverbMenuHeld) return;
+  const sole = soleScene8SelectedClipLoopId() != null ? getClipReverbParams(soleScene8SelectedClipLoopId()) : null;
+  for (let dc = 0; dc < 8; dc += 1) {
+    const pkG = padKeyFromPhysicalCell(dc, 6);
+    const isDecay = dc <= 3;
+    let vG = isDecay ? LP_SESSION_SCENE8_REVERB_MENU.stripGDecay : LP_SESSION_SCENE8_REVERB_MENU.stripGRoom;
+    const stepG = isDecay ? dc + 1 : dc - 3;
+    const pendingG =
+      (isDecay && store.scene8DecayStepSelection === stepG) ||
+      (!isDecay && store.scene8RoomStepSelection === stepG);
+    if (pendingG) {
+      vG =
+        store.scene8SelectedClipLoopIds.size > 0
+          ? LP_SESSION_SCENE8_REVERB_MENU.stripStepApplyYellow
+          : LP_SESSION_SCENE8_REVERB_MENU.stripStepQueryPurple;
+    } else if (sole && (isDecay ? sole.decayStep === stepG : sole.roomStep === stepG)) {
+      vG = isDecay
+        ? LP_SESSION_SCENE8_REVERB_MENU.stripDecayLit[dc]
+        : LP_SESSION_SCENE8_REVERB_MENU.stripRoomLit[dc - 4];
+    }
+    sendSessionPadLightingRowG(pkG, vG);
+    const pkH = padKeyFromPhysicalCell(dc, 7);
+    const isPre = dc <= 3;
+    let vH = isPre ? LP_SESSION_SCENE8_REVERB_MENU.stripHPreDelay : LP_SESSION_SCENE8_REVERB_MENU.stripHWet;
+    const stepH = isPre ? dc + 1 : dc - 3;
+    const pendingH =
+      (isPre && store.scene8PreDelayStepSelection === stepH) ||
+      (!isPre && store.scene8MixStepSelection === stepH);
+    if (pendingH) {
+      vH =
+        store.scene8SelectedClipLoopIds.size > 0
+          ? LP_SESSION_SCENE8_REVERB_MENU.stripStepApplyYellow
+          : LP_SESSION_SCENE8_REVERB_MENU.stripStepQueryPurple;
+    } else if (sole && (isPre ? sole.preDelayStep === stepH : sole.mixStep === stepH)) {
+      vH = isPre
+        ? LP_SESSION_SCENE8_REVERB_MENU.stripPreDelayLit[dc]
+        : LP_SESSION_SCENE8_REVERB_MENU.stripWetLit[dc - 4];
+    }
+    sendSessionPadLightingRowH(pkH, vH);
+  }
+}
+
+function toggleScene8ReverbMenuLatch() {
+  const next = !store.scene8ReverbMenuLatched;
+  store.scene8ReverbMenuLatched = next;
+  setScene8ReverbMenuHeld(next);
+}
+
+function releaseScene8ReverbMenuPointer() {
+  if (!store.scene8ReverbMenuLatched) setScene8ReverbMenuHeld(false);
+}
+
+function setScene8ReverbMenuHeld(on) {
+  if (!on) store.scene8ReverbMenuLatched = false;
+  const wasHeld = store.scene8ReverbMenuHeld;
+  if (on) {
+    if (store.g7VolumeMenuHeld) setG7VolumeMenuHeld(false);
+    if (store.g6StereoPanMenuHeld) setG6StereoPanMenuHeld(false);
+    if (store.scene4EqMenuHeld) setScene4EqMenuHeld(false);
+    if (store.scene5CompressorMenuHeld) setScene5CompressorMenuHeld(false);
+    if (store.g4DistortionMenuHeld) setG4DistortionMenuHeld(false);
+    if (store.scene7DelayMenuHeld) setScene7DelayMenuHeld(false);
+    if (store.h8ClockStripMenuHeld) setH8ClockStripMenuHeld(false);
+    clearHStopModifierPhysicalCols();
+    if (store.clipKindLegendHeld) endClipKindLegendHold();
+    if (store.clipTypeLegendHeld) endClipTypeLegendHold();
+  }
+  store.scene8ReverbMenuHeld = on;
+  if (dom.grid) dom.grid.classList.toggle("scene8-reverb-menu-active", on);
+  syncSidePanelLegendsWeb();
+  if (on) {
+    applyScene8ReverbMenuWebClasses();
+    if (store.midiAccess) {
+      refreshLaunchpadSceneSideCcLeds();
+      queueMicrotask(() => {
+        refreshLaunchpadSessionClipPadsHardwareOnly();
+        refreshLaunchpadScene8ReverbStripHardware();
+      });
+    }
+  } else if (wasHeld) {
+    store.scene8DecayStepSelection = null;
+    store.scene8RoomStepSelection = null;
+    store.scene8PreDelayStepSelection = null;
+    store.scene8MixStepSelection = null;
+    store.scene8SelectedClipLoopIds.clear();
+    clearScene8ReverbMenuWebClasses();
+    if (store.midiAccess) {
+      refreshLaunchpadSceneSideCcLeds();
+      queueMicrotask(() => {
+        refreshAllLaunchpadClipLeds();
+        refreshLaunchpadSyncClockRowG(syncClockTickDisplayColumn8());
+        refreshLaunchpadStripRowHIdleHardware();
+      });
+    }
+  } else if (store.midiAccess) {
+    refreshLaunchpadSceneSideCcLeds();
+  }
 }
 
 function applyG7VolumeStep(step) {
@@ -2000,9 +3619,7 @@ function setClipDistortionParams(loopId, partial) {
   const cur = getClipDistortionParams(loopId);
   const next = {
     drive: Math.max(1, Math.min(8, Math.floor(Number(partial.drive ?? cur.drive)) || 1)),
-    oversample: /** @type {0|1|2} */ (
-      Math.max(0, Math.min(2, Math.floor(Number(partial.oversample ?? cur.oversample)) || 0))
-    ),
+    oversample: Math.max(0, Math.min(2, Math.floor(Number(partial.oversample ?? cur.oversample)) || 0)),
     softClip: partial.softClip != null ? Boolean(partial.softClip) : cur.softClip,
     tone: Math.max(0, Math.min(4, Math.floor(Number(partial.tone ?? cur.tone)) || 0)),
   };
@@ -2025,6 +3642,20 @@ function updateG4VoiceDistortionForLoop(loopId) {
 function soleG4SelectedClipLoopId() {
   if (store.g4SelectedClipLoopIds.size !== 1) return null;
   return [...store.g4SelectedClipLoopIds][0];
+}
+
+/** Soft vs hard clip for H4 UI / LEDs (pending when no clips, or unanimous selection). */
+function getG4SoftClipUiState() {
+  if (store.g4SelectedClipLoopIds.size === 0) {
+    return { soft: store.g4DistortionSoftClipPending, mixed: false };
+  }
+  let soft = null;
+  for (const id of store.g4SelectedClipLoopIds) {
+    const s = getClipDistortionParams(id).softClip !== false;
+    if (soft === null) soft = s;
+    else if (soft !== s) return { soft: store.g4DistortionSoftClipPending, mixed: true };
+  }
+  return { soft: soft ?? true, mixed: false };
 }
 
 function allG4SelectedClipsHaveDrive(step) {
@@ -2060,7 +3691,7 @@ function refreshClipDistortionLevelBadges() {
       else el.append(badge);
     }
     const os = p.oversample === 1 ? "2×" : p.oversample === 2 ? "4×" : "";
-    const clip = p.softClip ? "S" : "H";
+    const clip = p.softClip !== false ? "Sf" : "Hd";
     const tone = p.tone > 0 ? `T${p.tone}` : "";
     badge.textContent = [clipDistortionDriveLabel(p.drive), os, clip, tone].filter(Boolean).join(" ");
     badge.title = `Distortion drive ${p.drive}/8 · ${os || "no OS"} · ${p.softClip ? "soft" : "hard"} clip · tone ${p.tone}/4`;
@@ -2088,7 +3719,7 @@ function applyG4DistortionDriveStep(step) {
 }
 
 function applyG4DistortionOversampleIndex(idx) {
-  const os = /** @type {0|1|2} */ (Math.max(0, Math.min(2, Math.floor(Number(idx)) || 0));
+  const os = Math.max(0, Math.min(2, Math.floor(Number(idx)) || 0));
   if (store.g4SelectedClipLoopIds.size > 0) {
     for (const id of store.g4SelectedClipLoopIds) {
       setClipDistortionParams(id, { oversample: os });
@@ -2118,6 +3749,7 @@ function toggleG4DistortionSoftClipOnSelection() {
     setClipDistortionParams(id, { softClip: next });
     updateG4VoiceDistortionForLoop(id);
   }
+  store.g4DistortionSoftClipPending = next;
   applyG4DistortionMenuWebClasses();
   refreshClipDistortionLevelBadges();
   if (store.midiAccess) {
@@ -2154,6 +3786,9 @@ function toggleG4ClipLoopSelection(loopId) {
       store.g4DistortionDriveStepSelection = null;
     }
     store.g4SelectedClipLoopIds.add(sid);
+    if (!store.g4ClipDistortionByLoopId.has(sid)) {
+      setClipDistortionParams(sid, { softClip: store.g4DistortionSoftClipPending });
+    }
   }
   if (store.g4SelectedClipLoopIds.size === 1) store.g4DistortionDriveStepSelection = null;
   applyG4DistortionMenuWebClasses();
@@ -2204,24 +3839,18 @@ function applyG4DistortionMenuWebClasses() {
       continue;
     }
     pad.classList.add("g4-h-os-strip", "g4-h-clip-strip", "g4-h-tone-strip");
+    pad.classList.remove("g4-h-strip-lit", "g4-h-clip-soft-lit", "g4-h-clip-hard-lit");
     const sole = soleId != null ? getClipDistortionParams(soleId) : null;
     let lit = false;
     if (dc <= 2) {
       if (nm) nm.textContent = dc === 0 ? "OS·" : dc === 1 ? "2×" : "4×";
       lit = sole != null && sole.oversample === dc;
     } else if (dc === 3) {
-      const soft =
-        sole != null
-          ? sole.softClip
-          : store.g4DistortionSoftClipPending;
-      if (nm) nm.textContent = soft === false ? "hard" : "soft";
-      lit =
-        sole != null
-          ? store.g4SelectedClipLoopIds.size > 0 &&
-            [...store.g4SelectedClipLoopIds].every(
-              (id) => getClipDistortionParams(id).softClip === sole.softClip,
-            )
-          : true;
+      const { soft, mixed } = getG4SoftClipUiState();
+      if (nm) nm.textContent = mixed ? "mix" : soft ? "soft" : "hard";
+      pad.classList.toggle("g4-h-clip-soft-lit", !mixed && soft);
+      pad.classList.toggle("g4-h-clip-hard-lit", !mixed && !soft);
+      continue;
     } else if (dc >= 4 && dc <= 7) {
       const tone = dc - 3;
       if (nm) nm.textContent = `T${tone}`;
@@ -2260,6 +3889,8 @@ function clearG4DistortionMenuWebClasses() {
       "g4-h-clip-strip",
       "g4-h-tone-strip",
       "g4-h-strip-lit",
+      "g4-h-clip-soft-lit",
+      "g4-h-clip-hard-lit",
     );
   }
   for (const el of dom.grid.querySelectorAll("button.pad[data-loop-id]")) {
@@ -2292,8 +3923,10 @@ function refreshLaunchpadG4DistortionStripHardware() {
     if (dc <= 2 && sole != null && sole.oversample === dc) {
       vH = [LP_SESSION_G4_DISTORTION_MENU.stripH1, LP_SESSION_G4_DISTORTION_MENU.stripH2, LP_SESSION_G4_DISTORTION_MENU.stripH3][dc];
     } else if (dc === 3) {
-      const soft = sole != null ? sole.softClip : store.g4DistortionSoftClipPending;
-      vH = soft ? LP_SESSION_G4_DISTORTION_MENU.stripH4 : LP_SESSION_PALETTE.playing;
+      const { soft } = getG4SoftClipUiState();
+      vH = soft
+        ? LP_SESSION_G4_DISTORTION_MENU.stripH4Soft
+        : LP_SESSION_G4_DISTORTION_MENU.stripH4Hard;
     } else if (dc >= 4 && dc <= 7 && sole != null && sole.tone === dc - 3) {
       vH = LP_SESSION_G4_DISTORTION_MENU.stripTone[dc - 4];
     } else if (dc === 7 && sole != null && sole.tone === 4) {
@@ -2313,12 +3946,94 @@ function releaseG4DistortionMenuPointer() {
   if (!store.g4DistortionMenuLatched) setG4DistortionMenuHeld(false);
 }
 
+function refreshLaunchpadSceneSideCcLeds() {
+  if (!store.midiAccess) return;
+  const packNavV = Math.min(127, Math.max(0, MINI_MK3_PACK_NAV_LED_PALETTE));
+  const maxScroll = store.pack?.sessionChannelsFull
+    ? getSessionScrollMaxOffsetFromFull(store.pack.sessionChannelsFull)
+    : 0;
+  const off = store.pack?.sessionRowScrollOffset ?? 0;
+  const upV = maxScroll > 0 && off > 0 ? packNavV : 0;
+  const downV = maxScroll > 0 && off < maxScroll ? packNavV : 0;
+  eachLaunchpadSessionLightOutput((output, name) => {
+    if (!portLooksLikeNovationLaunchpad(name)) return;
+    try {
+      output.send(new Uint8Array([0xb0, MINI_MK3_ARROW_LEFT_CC & 0x7f, packNavV]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_ARROW_RIGHT_CC & 0x7f, packNavV]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_ARROW_UP_CC & 0x7f, upV]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_ARROW_DOWN_CC & 0x7f, downV]));
+      const kindTopLed =
+        !store.pack || store.pack.nCols <= 0
+          ? 0
+          : store.clipKindLegendHeld
+            ? LP_SESSION_PALETTE.armed
+            : MINI_MK3_CLIP_LEGEND_KIND_SCENE_IDLE_LED;
+      const typeSceneLed =
+        !store.pack || store.pack.nCols <= 0
+          ? 0
+          : store.clipTypeLegendHeld
+            ? LP_SESSION_PALETTE.armed
+            : MINI_MK3_CLIP_LEGEND_TYPE_SCENE_IDLE_LED;
+      const stereoPanLed =
+        !store.pack || store.pack.nCols <= 0
+          ? 0
+          : store.g6StereoPanMenuHeld
+            ? LP_SESSION_PALETTE.armed
+            : MINI_MK3_STEREO_PAN_IDLE_LED;
+      const scene4EqLed =
+        !store.pack || store.pack.nCols <= 0
+          ? 0
+          : store.scene4EqMenuHeld
+            ? LP_SESSION_PALETTE.armed
+            : MINI_MK3_SCENE4_EQ_SCENE_IDLE_LED;
+      const scene5CompLed =
+        !store.pack || store.pack.nCols <= 0
+          ? 0
+          : store.scene5CompressorMenuHeld
+            ? LP_SESSION_PALETTE.armed
+            : MINI_MK3_SCENE5_COMP_SCENE_IDLE_LED;
+      const scene7DelayLed =
+        !store.pack || store.pack.nCols <= 0
+          ? 0
+          : store.scene7DelayMenuHeld
+            ? LP_SESSION_PALETTE.armed
+            : MINI_MK3_SCENE7_DELAY_SCENE_IDLE_LED;
+      const scene8ReverbLed =
+        !store.pack || store.pack.nCols <= 0
+          ? 0
+          : store.scene8ReverbMenuHeld
+            ? LP_SESSION_PALETTE.armed
+            : MINI_MK3_SCENE8_REVERB_SCENE_IDLE_LED;
+      const distortionLed =
+        !store.pack || store.pack.nCols <= 0
+          ? 0
+          : store.g4DistortionMenuHeld
+            ? LP_SESSION_PALETTE.armed
+            : MINI_MK3_DISTORTION_SCENE_IDLE_LED;
+      output.send(new Uint8Array([0xb0, MINI_MK3_CLIP_KIND_LEGEND_CC & 0x7f, kindTopLed]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_CLIP_TYPE_LEGEND_CC & 0x7f, typeSceneLed]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_STEREO_PAN_CC & 0x7f, stereoPanLed]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_SCENE4_EQ_CC & 0x7f, scene4EqLed]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_SCENE5_COMP_CC & 0x7f, scene5CompLed]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_SCENE7_DELAY_CC & 0x7f, scene7DelayLed]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_SCENE8_REVERB_CC & 0x7f, scene8ReverbLed]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_DISTORTION_CC & 0x7f, distortionLed]));
+    } catch (err) {
+      console.warn("Launchpad scene side CC LED failed:", name, err);
+    }
+  });
+}
+
 function setG4DistortionMenuHeld(on) {
   if (!on) store.g4DistortionMenuLatched = false;
-  if (store.g4DistortionMenuHeld === on) return;
+  const wasHeld = store.g4DistortionMenuHeld;
   if (on) {
     if (store.g7VolumeMenuHeld) setG7VolumeMenuHeld(false);
     if (store.g6StereoPanMenuHeld) setG6StereoPanMenuHeld(false);
+    if (store.scene4EqMenuHeld) setScene4EqMenuHeld(false);
+    if (store.scene5CompressorMenuHeld) setScene5CompressorMenuHeld(false);
+    if (store.scene7DelayMenuHeld) setScene7DelayMenuHeld(false);
+    if (store.scene8ReverbMenuHeld) setScene8ReverbMenuHeld(false);
     if (store.h8ClockStripMenuHeld) setH8ClockStripMenuHeld(false);
     clearHStopModifierPhysicalCols();
     if (store.clipKindLegendHeld) endClipKindLegendHold();
@@ -2326,28 +4041,31 @@ function setG4DistortionMenuHeld(on) {
   }
   store.g4DistortionMenuHeld = on;
   if (dom.grid) dom.grid.classList.toggle("g4-distortion-menu-active", on);
+  syncSidePanelLegendsWeb();
   if (on) {
     applyG4DistortionMenuWebClasses();
     if (store.midiAccess) {
+      refreshLaunchpadSceneSideCcLeds();
       queueMicrotask(() => {
-        refreshLaunchpadMiniMk3PackNavLeds();
         refreshLaunchpadSessionClipPadsHardwareOnly();
         refreshLaunchpadG4DistortionStripHardware();
       });
     }
-  } else {
+  } else if (wasHeld) {
     store.g4DistortionDriveStepSelection = null;
     store.g4SelectedClipLoopIds.clear();
     store.g4DistortionSoftClipPending = true;
     clearG4DistortionMenuWebClasses();
     if (store.midiAccess) {
+      refreshLaunchpadSceneSideCcLeds();
       queueMicrotask(() => {
-        refreshLaunchpadMiniMk3PackNavLeds();
         refreshAllLaunchpadClipLeds();
         refreshLaunchpadSyncClockRowG(syncClockTickDisplayColumn8());
         refreshLaunchpadStripRowHIdleHardware();
       });
     }
+  } else if (store.midiAccess) {
+    refreshLaunchpadSceneSideCcLeds();
   }
 }
 
@@ -2358,7 +4076,10 @@ function refreshLaunchpadStripRowHIdleHardware() {
     !store.pack ||
     store.g7VolumeMenuHeld ||
     store.g6StereoPanMenuHeld ||
-    store.g4DistortionMenuHeld
+    store.g4DistortionMenuHeld ||
+    store.scene4EqMenuHeld ||
+    store.scene5CompressorMenuHeld ||
+    store.scene7DelayMenuHeld
   ) {
     return;
   }
@@ -2504,6 +4225,42 @@ function syncSidePanelLegendsWeb() {
     panBtn.classList.toggle("side-panel-stereo-idle", !store.g6StereoPanMenuHeld && !!store.pack);
     panBtn.setAttribute("aria-pressed", store.g6StereoPanMenuHeld ? "true" : "false");
   }
+  const delayBtn = dom.grid.querySelector('button.pad.side-panel[data-side-panel-scene7-delay="true"]');
+  if (delayBtn) {
+    const nm = delayBtn.querySelector(".nm");
+    const label = delayBtn.dataset.sidePanelNmDefault ?? "dly";
+    if (nm) nm.textContent = store.scene7DelayMenuHeld ? `${label} ·` : label;
+    delayBtn.classList.toggle("scene7-delay-menu-held", store.scene7DelayMenuHeld);
+    delayBtn.classList.toggle("side-panel-scene7-delay-idle", !store.scene7DelayMenuHeld && !!store.pack);
+    delayBtn.setAttribute("aria-pressed", store.scene7DelayMenuHeld ? "true" : "false");
+  }
+  const reverbBtn = dom.grid.querySelector('button.pad.side-panel[data-side-panel-scene8-reverb="true"]');
+  if (reverbBtn) {
+    const nm = reverbBtn.querySelector(".nm");
+    const label = reverbBtn.dataset.sidePanelNmDefault ?? "rev";
+    if (nm) nm.textContent = store.scene8ReverbMenuHeld ? `${label} ·` : label;
+    reverbBtn.classList.toggle("scene8-reverb-menu-held", store.scene8ReverbMenuHeld);
+    reverbBtn.classList.toggle("side-panel-scene8-reverb-idle", !store.scene8ReverbMenuHeld && !!store.pack);
+    reverbBtn.setAttribute("aria-pressed", store.scene8ReverbMenuHeld ? "true" : "false");
+  }
+  const compBtn = dom.grid.querySelector('button.pad.side-panel[data-side-panel-scene5-comp="true"]');
+  if (compBtn) {
+    const nm = compBtn.querySelector(".nm");
+    const label = compBtn.dataset.sidePanelNmDefault ?? "comp";
+    if (nm) nm.textContent = store.scene5CompressorMenuHeld ? `${label} ·` : label;
+    compBtn.classList.toggle("scene5-comp-menu-held", store.scene5CompressorMenuHeld);
+    compBtn.classList.toggle("side-panel-scene5-comp-idle", !store.scene5CompressorMenuHeld && !!store.pack);
+    compBtn.setAttribute("aria-pressed", store.scene5CompressorMenuHeld ? "true" : "false");
+  }
+  const eqBtn = dom.grid.querySelector('button.pad.side-panel[data-side-panel-scene4-eq="true"]');
+  if (eqBtn) {
+    const nm = eqBtn.querySelector(".nm");
+    const label = eqBtn.dataset.sidePanelNmDefault ?? "eq";
+    if (nm) nm.textContent = store.scene4EqMenuHeld ? `${label} ·` : label;
+    eqBtn.classList.toggle("scene4-eq-menu-held", store.scene4EqMenuHeld);
+    eqBtn.classList.toggle("side-panel-scene4-eq-idle", !store.scene4EqMenuHeld && !!store.pack);
+    eqBtn.setAttribute("aria-pressed", store.scene4EqMenuHeld ? "true" : "false");
+  }
   const distBtn = dom.grid.querySelector('button.pad.side-panel[data-side-panel-distortion="true"]');
   if (distBtn) {
     const nm = distBtn.querySelector(".nm");
@@ -2630,12 +4387,60 @@ function appendSidePanelPad(rowIdx, rowLetter) {
       onRelease: () => releaseG6StereoPanMenuPointer(),
       onToggleLatch: () => toggleG6StereoPanMenuLatch(),
     });
+  } else if (rowIdx === SIDE_PANEL_SCENE5_COMP_ROW_IDX) {
+    side.dataset.sidePanelScene5Comp = "true";
+    nm.textContent = "comp";
+    side.dataset.sidePanelNmDefault = "comp";
+    side.title =
+      "Hold or click to lock: compressor (Launchpad scene row 5 / CC 49). Select clips 1A…8F. Row G = threshold 1…8; H1–H4 = ratio, H5–H8 = makeup (after EQ, before distortion).";
+    side.classList.add("side-panel-scene5-comp-idle");
+    wireWebMenuHoldPad(side, {
+      onPress: () => setScene5CompressorMenuHeld(true),
+      onRelease: () => releaseScene5CompressorMenuPointer(),
+      onToggleLatch: () => toggleScene5CompressorMenuLatch(),
+    });
+  } else if (rowIdx === SIDE_PANEL_SCENE4_EQ_ROW_IDX) {
+    side.dataset.sidePanelScene4Eq = "true";
+    nm.textContent = "eq";
+    side.dataset.sidePanelNmDefault = "eq";
+    side.title =
+      "Hold or click to lock: spectrum EQ (Launchpad scene row 4 / CC 59). Select clips 1A…8F. Row G = high-pass 1/8…8/8, row H = low-pass 1/8…8/8 (before distortion).";
+    side.classList.add("side-panel-scene4-eq-idle");
+    wireWebMenuHoldPad(side, {
+      onPress: () => setScene4EqMenuHeld(true),
+      onRelease: () => releaseScene4EqMenuPointer(),
+      onToggleLatch: () => toggleScene4EqMenuLatch(),
+    });
+  } else if (rowIdx === SIDE_PANEL_SCENE7_DELAY_ROW_IDX) {
+    side.dataset.sidePanelScene7Delay = "true";
+    nm.textContent = "dly";
+    side.dataset.sidePanelNmDefault = "dly";
+    side.title =
+      "Hold or click to lock: delay (Launchpad scene row 7 / CC 29). Select clips 1A…8F. G1–G4 = time (blue), G5–G8 = feedback (red), H1–H4 = mix (purple), H5–H8 = tone (green). After distortion.";
+    side.classList.add("side-panel-scene7-delay-idle");
+    wireWebMenuHoldPad(side, {
+      onPress: () => setScene7DelayMenuHeld(true),
+      onRelease: () => releaseScene7DelayMenuPointer(),
+      onToggleLatch: () => toggleScene7DelayMenuLatch(),
+    });
+  } else if (rowIdx === SIDE_PANEL_SCENE8_REVERB_ROW_IDX) {
+    side.dataset.sidePanelScene8Reverb = "true";
+    nm.textContent = "rev";
+    side.dataset.sidePanelNmDefault = "rev";
+    side.title =
+      "Hold or click to lock: reverb (Launchpad scene row 8 / CC 19). Select clips 1A…8F. G1–G4 = decay (blue), G5–G8 = room (green), H1–H4 = pre-delay (yellow), H5–H8 = wet (purple). After delay.";
+    side.classList.add("side-panel-scene8-reverb-idle");
+    wireWebMenuHoldPad(side, {
+      onPress: () => setScene8ReverbMenuHeld(true),
+      onRelease: () => releaseScene8ReverbMenuPointer(),
+      onToggleLatch: () => toggleScene8ReverbMenuLatch(),
+    });
   } else if (rowIdx === SIDE_PANEL_DISTORTION_ROW_IDX) {
     side.dataset.sidePanelDistortion = "true";
     nm.textContent = "dist";
     side.dataset.sidePanelNmDefault = "dist";
     side.title =
-      "Hold or click to lock: distortion (Launchpad scene row 4 / CC 59). Select clips 1A…8F. Row G = drive 1…8; row H: H1–H3 oversample, H4 soft/hard clip, H5–H8 tone filter.";
+      "Hold or click to lock: distortion (Launchpad scene row 6 / CC 39). Select clips 1A…8F. Row G = drive 1…8; row H: H1–H3 oversample, H4 soft/hard clip, H5–H8 tone filter.";
     side.classList.add("side-panel-distortion-idle");
     wireWebMenuHoldPad(side, {
       onPress: () => setG4DistortionMenuHeld(true),
@@ -2833,6 +4638,10 @@ function setG6StereoPanMenuHeld(on) {
   if (on) {
     if (store.g7VolumeMenuHeld) setG7VolumeMenuHeld(false);
     if (store.g4DistortionMenuHeld) setG4DistortionMenuHeld(false);
+    if (store.scene4EqMenuHeld) setScene4EqMenuHeld(false);
+    if (store.scene5CompressorMenuHeld) setScene5CompressorMenuHeld(false);
+    if (store.scene7DelayMenuHeld) setScene7DelayMenuHeld(false);
+    if (store.scene8ReverbMenuHeld) setScene8ReverbMenuHeld(false);
     if (store.h8ClockStripMenuHeld) setH8ClockStripMenuHeld(false);
     clearHStopModifierPhysicalCols();
   }
@@ -2871,6 +4680,10 @@ function setG7VolumeMenuHeld(on) {
   if (on) {
     if (store.g6StereoPanMenuHeld) setG6StereoPanMenuHeld(false);
     if (store.g4DistortionMenuHeld) setG4DistortionMenuHeld(false);
+    if (store.scene4EqMenuHeld) setScene4EqMenuHeld(false);
+    if (store.scene5CompressorMenuHeld) setScene5CompressorMenuHeld(false);
+    if (store.scene7DelayMenuHeld) setScene7DelayMenuHeld(false);
+    if (store.scene8ReverbMenuHeld) setScene8ReverbMenuHeld(false);
     if (store.h8ClockStripMenuHeld) setH8ClockStripMenuHeld(false);
   }
   if (on) clearHStopModifierPhysicalCols();
@@ -2976,6 +4789,26 @@ function syncClockTickDisplayColumn8() {
 
 function refreshLaunchpadSyncClockRowG(tickDisplayCol) {
   if (!store.midiAccess) return;
+  if (store.scene8ReverbMenuHeld) {
+    refreshLaunchpadScene8ReverbStripHardware();
+    refreshLaunchpadSessionClipPadsHardwareOnly();
+    return;
+  }
+  if (store.scene7DelayMenuHeld) {
+    refreshLaunchpadScene7DelayStripHardware();
+    refreshLaunchpadSessionClipPadsHardwareOnly();
+    return;
+  }
+  if (store.scene5CompressorMenuHeld) {
+    refreshLaunchpadScene5CompStripHardware();
+    refreshLaunchpadSessionClipPadsHardwareOnly();
+    return;
+  }
+  if (store.scene4EqMenuHeld) {
+    refreshLaunchpadScene4EqStripHardware();
+    refreshLaunchpadSessionClipPadsHardwareOnly();
+    return;
+  }
   if (store.g4DistortionMenuHeld) {
     refreshLaunchpadG4DistortionStripHardware();
     refreshLaunchpadSessionClipPadsHardwareOnly();
@@ -3004,7 +4837,17 @@ function refreshLaunchpadSyncClockRowG(tickDisplayCol) {
 }
 
 function updateWebSyncClockRowG(tickCol) {
-  if (!dom.grid || store.g6StereoPanMenuHeld || store.g4DistortionMenuHeld) return;
+  if (
+    !dom.grid ||
+    store.g6StereoPanMenuHeld ||
+    store.g4DistortionMenuHeld ||
+    store.scene4EqMenuHeld ||
+    store.scene5CompressorMenuHeld ||
+    store.scene7DelayMenuHeld ||
+    store.scene8ReverbMenuHeld
+  ) {
+    return;
+  }
   const pads = dom.grid.querySelectorAll('button.pad.utility[data-utility-row="6"]');
   for (const pad of pads) {
     const dc = Number(pad.dataset.displayCol);
@@ -3768,10 +5611,18 @@ function syncPlaybackPadClasses() {
   if (store.h8ClockStripMenuHeld) applyH8ClockStripMenuWebClasses();
   if (store.g7VolumeMenuHeld) applyG7VolumeMenuWebClasses();
   if (store.g6StereoPanMenuHeld) applyG6StereoPanMenuWebClasses();
+  if (store.scene4EqMenuHeld) applyScene4EqMenuWebClasses();
+  if (store.scene5CompressorMenuHeld) applyScene5CompressorMenuWebClasses();
+  if (store.scene7DelayMenuHeld) applyScene7DelayMenuWebClasses();
+  if (store.scene8ReverbMenuHeld) applyScene8ReverbMenuWebClasses();
   if (store.g4DistortionMenuHeld) applyG4DistortionMenuWebClasses();
   if (store.clipKindLegendHeld || store.clipTypeLegendHeld) syncClipLegendWebStyling();
   refreshClipVolumeLevelBadges();
   refreshClipPanBars();
+  refreshClipSpectrumEqLevelBadges();
+  refreshClipCompressorLevelBadges();
+  refreshClipDelayLevelBadges();
+  refreshClipReverbLevelBadges();
   refreshClipDistortionLevelBadges();
   refreshClipChannelBadges();
 }
@@ -3782,6 +5633,8 @@ function renderGrid(packState) {
   setG7VolumeMenuHeld(false);
   setG6StereoPanMenuHeld(false);
   setG4DistortionMenuHeld(false);
+  setScene7DelayMenuHeld(false);
+  setScene8ReverbMenuHeld(false);
   setH8ClockStripMenuHeld(false);
   dom.grid.innerHTML = "";
   dom.cols.innerHTML = buildColLabelsHtml(packState);
@@ -3838,6 +5691,24 @@ function renderGrid(packState) {
             "Hold or click to lock volume — row H shows 1/8…8/8 (8H = max). Tap clips 1A…8F to select. Click volume again to exit. One clip: H shows its level (blue). Several: tap H (yellow) to set.";
           wireWebMenuHoldPad(pad, {
             onPress: () => {
+              if (store.scene8ReverbMenuHeld) {
+                applyScene8DecayStep(4);
+                applyScene8RoomStep(4);
+                return;
+              }
+              if (store.scene7DelayMenuHeld) {
+                applyScene7TimeStep(4);
+                applyScene7FeedbackStep(4);
+                return;
+              }
+              if (store.scene5CompressorMenuHeld) {
+                applyScene5ThresholdStep(8);
+                return;
+              }
+              if (store.scene4EqMenuHeld) {
+                applyScene4HighPassStep(8);
+                return;
+              }
               if (store.g4DistortionMenuHeld) {
                 applyG4DistortionDriveStep(8);
                 return;
@@ -3849,10 +5720,37 @@ function renderGrid(packState) {
               setG7VolumeMenuHeld(true);
             },
             onRelease: () => {
-              if (store.g6StereoPanMenuHeld || store.g4DistortionMenuHeld) return;
+              if (
+                store.g6StereoPanMenuHeld ||
+                store.g4DistortionMenuHeld ||
+                store.scene4EqMenuHeld ||
+                store.scene5CompressorMenuHeld ||
+                store.scene7DelayMenuHeld ||
+                store.scene8ReverbMenuHeld
+              ) {
+                return;
+              }
               releaseG7VolumeMenuPointer();
             },
             onToggleLatch: () => {
+              if (store.scene8ReverbMenuHeld) {
+                applyScene8DecayStep(4);
+                applyScene8RoomStep(4);
+                return;
+              }
+              if (store.scene7DelayMenuHeld) {
+                applyScene7TimeStep(4);
+                applyScene7FeedbackStep(4);
+                return;
+              }
+              if (store.scene5CompressorMenuHeld) {
+                applyScene5ThresholdStep(8);
+                return;
+              }
+              if (store.scene4EqMenuHeld) {
+                applyScene4HighPassStep(8);
+                return;
+              }
               if (store.g4DistortionMenuHeld) {
                 applyG4DistortionDriveStep(8);
                 return;
@@ -3872,6 +5770,24 @@ function renderGrid(packState) {
             "While volume menu is active (hold/lock volume on 8G): 8/8 max level. While pan menu is active: R8. Otherwise hold or click to lock clock tick sync — pick ticks with 8A…8F (same as Clock sync above). Click again to exit.";
           wireWebMenuHoldPad(pad, {
             onPress: () => {
+              if (store.scene8ReverbMenuHeld) {
+                applyScene8PreDelayStep(4);
+                applyScene8MixStep(4);
+                return;
+              }
+              if (store.scene7DelayMenuHeld) {
+                applyScene7MixStep(4);
+                applyScene7ToneStep(4);
+                return;
+              }
+              if (store.scene5CompressorMenuHeld) {
+                applyScene5MakeupStep(8);
+                return;
+              }
+              if (store.scene4EqMenuHeld) {
+                applyScene4LowPassStep(8);
+                return;
+              }
               if (store.g4DistortionMenuHeld) {
                 applyG4DistortionToneLevel(4);
                 return;
@@ -3887,10 +5803,38 @@ function renderGrid(packState) {
               setH8ClockStripMenuHeld(true);
             },
             onRelease: () => {
-              if (store.g6StereoPanMenuHeld || store.g7VolumeMenuHeld || store.g4DistortionMenuHeld) return;
+              if (
+                store.g6StereoPanMenuHeld ||
+                store.g7VolumeMenuHeld ||
+                store.g4DistortionMenuHeld ||
+                store.scene4EqMenuHeld ||
+                store.scene5CompressorMenuHeld ||
+                store.scene7DelayMenuHeld ||
+                store.scene8ReverbMenuHeld
+              ) {
+                return;
+              }
               releaseH8ClockStripMenuPointer();
             },
             onToggleLatch: () => {
+              if (store.scene8ReverbMenuHeld) {
+                applyScene8PreDelayStep(4);
+                applyScene8MixStep(4);
+                return;
+              }
+              if (store.scene7DelayMenuHeld) {
+                applyScene7MixStep(4);
+                applyScene7ToneStep(4);
+                return;
+              }
+              if (store.scene5CompressorMenuHeld) {
+                applyScene5MakeupStep(8);
+                return;
+              }
+              if (store.scene4EqMenuHeld) {
+                applyScene4LowPassStep(8);
+                return;
+              }
               if (store.g4DistortionMenuHeld) {
                 applyG4DistortionToneLevel(4);
                 return;
@@ -3931,6 +5875,26 @@ function renderGrid(packState) {
           };
           pad.addEventListener("pointerdown", async (ev) => {
             ev.preventDefault();
+            if (store.scene8ReverbMenuHeld) {
+              ev.stopPropagation();
+              applyScene8StripG(dc);
+              return;
+            }
+            if (store.scene7DelayMenuHeld) {
+              ev.stopPropagation();
+              applyScene7StripG(dc);
+              return;
+            }
+            if (store.scene5CompressorMenuHeld) {
+              ev.stopPropagation();
+              applyScene5ThresholdStep(dc + 1);
+              return;
+            }
+            if (store.scene4EqMenuHeld) {
+              ev.stopPropagation();
+              applyScene4HighPassStep(dc + 1);
+              return;
+            }
             if (store.g4DistortionMenuHeld) {
               ev.stopPropagation();
               applyG4DistortionDriveStep(dc + 1);
@@ -3955,7 +5919,16 @@ function renderGrid(packState) {
             muteColumnOn(logicalCol, dc);
           });
           pad.addEventListener("pointerup", (ev) => {
-            if (store.g6StereoPanMenuHeld || store.g4DistortionMenuHeld) return;
+            if (
+              store.g6StereoPanMenuHeld ||
+              store.g4DistortionMenuHeld ||
+              store.scene4EqMenuHeld ||
+              store.scene5CompressorMenuHeld ||
+              store.scene7DelayMenuHeld ||
+              store.scene8ReverbMenuHeld
+            ) {
+              return;
+            }
             unmuteStrip();
             try {
               pad.releasePointerCapture(ev.pointerId);
@@ -3964,11 +5937,29 @@ function renderGrid(packState) {
             }
           });
           pad.addEventListener("pointercancel", (ev) => {
-            if (store.g6StereoPanMenuHeld || store.g4DistortionMenuHeld) return;
+            if (
+              store.g6StereoPanMenuHeld ||
+              store.g4DistortionMenuHeld ||
+              store.scene4EqMenuHeld ||
+              store.scene5CompressorMenuHeld ||
+              store.scene7DelayMenuHeld ||
+              store.scene8ReverbMenuHeld
+            ) {
+              return;
+            }
             unmuteStrip();
           });
           pad.addEventListener("lostpointercapture", (ev) => {
-            if (store.g6StereoPanMenuHeld || store.g4DistortionMenuHeld) return;
+            if (
+              store.g6StereoPanMenuHeld ||
+              store.g4DistortionMenuHeld ||
+              store.scene4EqMenuHeld ||
+              store.scene5CompressorMenuHeld ||
+              store.scene7DelayMenuHeld ||
+              store.scene8ReverbMenuHeld
+            ) {
+              return;
+            }
             unmuteStrip();
           });
           pad.addEventListener("click", (ev) => {
@@ -3978,6 +5969,31 @@ function renderGrid(packState) {
         } else {
           const releaseHStopModifier = () => setHStopModifierHeld(dc, false);
           pad.addEventListener("pointerdown", async (ev) => {
+            if (store.scene8ReverbMenuHeld) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              applyScene8StripH(dc);
+              return;
+            }
+            if (store.scene7DelayMenuHeld) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              applyScene7StripH(dc);
+              return;
+            }
+            if (store.scene5CompressorMenuHeld) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              if (dc <= 3) applyScene5RatioStep(dc + 1);
+              else applyScene5MakeupStep(dc + 1);
+              return;
+            }
+            if (store.scene4EqMenuHeld) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              applyScene4LowPassStep(dc + 1);
+              return;
+            }
             if (store.g4DistortionMenuHeld) {
               ev.preventDefault();
               ev.stopPropagation();
@@ -4009,7 +6025,15 @@ function renderGrid(packState) {
             if (store.audioCtx.state === "suspended") await store.audioCtx.resume();
           });
           pad.addEventListener("pointerup", (ev) => {
-            if (!store.g6StereoPanMenuHeld && !store.g7VolumeMenuHeld && !store.g4DistortionMenuHeld) {
+            if (
+              !store.g6StereoPanMenuHeld &&
+              !store.g7VolumeMenuHeld &&
+              !store.g4DistortionMenuHeld &&
+              !store.scene4EqMenuHeld &&
+              !store.scene5CompressorMenuHeld &&
+              !store.scene7DelayMenuHeld &&
+              !store.scene8ReverbMenuHeld
+            ) {
               releaseHStopModifier();
             }
             try {
@@ -4019,12 +6043,28 @@ function renderGrid(packState) {
             }
           });
           pad.addEventListener("pointercancel", (ev) => {
-            if (!store.g6StereoPanMenuHeld && !store.g7VolumeMenuHeld && !store.g4DistortionMenuHeld) {
+            if (
+              !store.g6StereoPanMenuHeld &&
+              !store.g7VolumeMenuHeld &&
+              !store.g4DistortionMenuHeld &&
+              !store.scene4EqMenuHeld &&
+              !store.scene5CompressorMenuHeld &&
+              !store.scene7DelayMenuHeld &&
+              !store.scene8ReverbMenuHeld
+            ) {
               releaseHStopModifier();
             }
           });
           pad.addEventListener("lostpointercapture", (ev) => {
-            if (!store.g6StereoPanMenuHeld && !store.g7VolumeMenuHeld && !store.g4DistortionMenuHeld) {
+            if (
+              !store.g6StereoPanMenuHeld &&
+              !store.g7VolumeMenuHeld &&
+              !store.g4DistortionMenuHeld &&
+              !store.scene4EqMenuHeld &&
+              !store.scene5CompressorMenuHeld &&
+              !store.scene7DelayMenuHeld &&
+              !store.scene8ReverbMenuHeld
+            ) {
               releaseHStopModifier();
             }
           });
@@ -4127,6 +6167,34 @@ function renderGrid(packState) {
               }
               return;
             }
+            if (store.scene8ReverbMenuHeld) {
+              if (isG7ClipMultiSelectSessionPadKey(pk)) {
+                const lid = getLoopIdForSessionClipPadOrScan(pk);
+                if (lid != null) toggleScene8ClipLoopSelection(lid);
+              }
+              return;
+            }
+            if (store.scene7DelayMenuHeld) {
+              if (isG7ClipMultiSelectSessionPadKey(pk)) {
+                const lid = getLoopIdForSessionClipPadOrScan(pk);
+                if (lid != null) toggleScene7ClipLoopSelection(lid);
+              }
+              return;
+            }
+            if (store.scene5CompressorMenuHeld) {
+              if (isG7ClipMultiSelectSessionPadKey(pk)) {
+                const lid = getLoopIdForSessionClipPadOrScan(pk);
+                if (lid != null) toggleScene5ClipLoopSelection(lid);
+              }
+              return;
+            }
+            if (store.scene4EqMenuHeld) {
+              if (isG7ClipMultiSelectSessionPadKey(pk)) {
+                const lid = getLoopIdForSessionClipPadOrScan(pk);
+                if (lid != null) toggleScene4ClipLoopSelection(lid);
+              }
+              return;
+            }
             if (store.g4DistortionMenuHeld) {
               if (isG7ClipMultiSelectSessionPadKey(pk)) {
                 const lid = getLoopIdForSessionClipPadOrScan(pk);
@@ -4173,6 +6241,38 @@ function renderGrid(packState) {
           });
         } else {
           pad.addEventListener("pointerdown", (ev) => {
+            if (store.scene8ReverbMenuHeld && isG7ClipMultiSelectSessionPadKey(pk)) {
+              const lid = getLoopIdForSessionClipPadOrScan(pk);
+              if (lid == null) return;
+              ev.preventDefault();
+              ev.stopPropagation();
+              toggleScene8ClipLoopSelection(lid);
+              return;
+            }
+            if (store.scene7DelayMenuHeld && isG7ClipMultiSelectSessionPadKey(pk)) {
+              const lid = getLoopIdForSessionClipPadOrScan(pk);
+              if (lid == null) return;
+              ev.preventDefault();
+              ev.stopPropagation();
+              toggleScene7ClipLoopSelection(lid);
+              return;
+            }
+            if (store.scene5CompressorMenuHeld && isG7ClipMultiSelectSessionPadKey(pk)) {
+              const lid = getLoopIdForSessionClipPadOrScan(pk);
+              if (lid == null) return;
+              ev.preventDefault();
+              ev.stopPropagation();
+              toggleScene5ClipLoopSelection(lid);
+              return;
+            }
+            if (store.scene4EqMenuHeld && isG7ClipMultiSelectSessionPadKey(pk)) {
+              const lid = getLoopIdForSessionClipPadOrScan(pk);
+              if (lid == null) return;
+              ev.preventDefault();
+              ev.stopPropagation();
+              toggleScene4ClipLoopSelection(lid);
+              return;
+            }
             if (store.g4DistortionMenuHeld && isG7ClipMultiSelectSessionPadKey(pk)) {
               const lid = getLoopIdForSessionClipPadOrScan(pk);
               if (lid == null) return;
@@ -4197,7 +6297,15 @@ function renderGrid(packState) {
             toggleG7ClipLoopSelection(lid);
           });
           pad.addEventListener("click", async (ev) => {
-            if (store.g6StereoPanMenuHeld || store.g7VolumeMenuHeld || store.g4DistortionMenuHeld) {
+            if (
+              store.g6StereoPanMenuHeld ||
+              store.g7VolumeMenuHeld ||
+              store.g4DistortionMenuHeld ||
+              store.scene4EqMenuHeld ||
+              store.scene5CompressorMenuHeld ||
+              store.scene7DelayMenuHeld ||
+              store.scene8ReverbMenuHeld
+            ) {
               ev.preventDefault();
               ev.stopPropagation();
               return;
@@ -4432,16 +6540,69 @@ function handleMidiMessage(ev) {
       const rp = rPad ? parsePadKey(rPad) : null;
       if (rp && rp.rowIdx === 6) {
         if (rPad === "8G") {
-          if (!store.g6StereoPanMenuHeld && !store.g4DistortionMenuHeld) setG7VolumeMenuHeld(false);
+          if (
+            !store.g6StereoPanMenuHeld &&
+            !store.g4DistortionMenuHeld &&
+            !store.scene4EqMenuHeld &&
+            !store.scene5CompressorMenuHeld &&
+            !store.scene7DelayMenuHeld &&
+            !store.scene8ReverbMenuHeld
+          ) {
+            setG7VolumeMenuHeld(false);
+          }
           setMidiDebugLine([
             port.slice(0, 56),
             raw,
             rPad,
-            store.g4DistortionMenuHeld
-              ? "strip G8 · note off ignored during distortion menu"
-              : store.g6StereoPanMenuHeld
-                ? "strip G8 · note off ignored during stereo pan menu"
-                : "strip 8G · volume menu released (column 8 strip is volume UI, not mute)",
+            store.scene8ReverbMenuHeld
+              ? "strip G8 · note off ignored during reverb menu"
+              : store.scene7DelayMenuHeld
+              ? "strip G8 · note off ignored during delay menu"
+              : store.scene5CompressorMenuHeld
+                ? "strip G8 · note off ignored during compressor menu"
+                : store.scene4EqMenuHeld
+                ? "strip G8 · note off ignored during spectrum EQ menu"
+                : store.g4DistortionMenuHeld
+                ? "strip G8 · note off ignored during distortion menu"
+                : store.g6StereoPanMenuHeld
+                  ? "strip G8 · note off ignored during stereo pan menu"
+                  : "strip 8G · volume menu released (column 8 strip is volume UI, not mute)",
+          ]);
+          return;
+        }
+        if (store.scene8ReverbMenuHeld) {
+          setMidiDebugLine([
+            port.slice(0, 56),
+            raw,
+            rPad,
+            "strip G · note off ignored during reverb menu",
+          ]);
+          return;
+        }
+        if (store.scene7DelayMenuHeld) {
+          setMidiDebugLine([
+            port.slice(0, 56),
+            raw,
+            rPad,
+            "strip G · note off ignored during delay menu",
+          ]);
+          return;
+        }
+        if (store.scene5CompressorMenuHeld) {
+          setMidiDebugLine([
+            port.slice(0, 56),
+            raw,
+            rPad,
+            "strip G · note off ignored during compressor menu",
+          ]);
+          return;
+        }
+        if (store.scene4EqMenuHeld) {
+          setMidiDebugLine([
+            port.slice(0, 56),
+            raw,
+            rPad,
+            "strip G · note off ignored during spectrum EQ menu",
           ]);
           return;
         }
@@ -4484,6 +6645,42 @@ function handleMidiMessage(ev) {
         return;
       }
       if (rp && rp.rowIdx === 7) {
+        if (store.scene8ReverbMenuHeld) {
+          setMidiDebugLine([
+            port.slice(0, 56),
+            raw,
+            rPad,
+            "strip H · note off ignored during reverb menu",
+          ]);
+          return;
+        }
+        if (store.scene7DelayMenuHeld) {
+          setMidiDebugLine([
+            port.slice(0, 56),
+            raw,
+            rPad,
+            "strip H · note off ignored during delay menu",
+          ]);
+          return;
+        }
+        if (store.scene5CompressorMenuHeld) {
+          setMidiDebugLine([
+            port.slice(0, 56),
+            raw,
+            rPad,
+            "strip H · note off ignored during compressor menu",
+          ]);
+          return;
+        }
+        if (store.scene4EqMenuHeld) {
+          setMidiDebugLine([
+            port.slice(0, 56),
+            raw,
+            rPad,
+            "strip H · note off ignored during spectrum EQ menu",
+          ]);
+          return;
+        }
         if (store.g4DistortionMenuHeld) {
           setMidiDebugLine([
             port.slice(0, 56),
@@ -4639,6 +6836,64 @@ function handleMidiMessage(ev) {
     isStripMuteStopInertAtPhysicalCol(parsed.col) &&
     (parsed.rowIdx === 6 || parsed.rowIdx === 7)
   ) {
+    if (store.scene8ReverbMenuHeld) {
+      if (parsed.rowIdx === 6) {
+        applyScene8DecayStep(4);
+        applyScene8RoomStep(4);
+      } else {
+        applyScene8PreDelayStep(4);
+        applyScene8MixStep(4);
+      }
+      setMidiDebugLine([
+        port.slice(0, 56),
+        raw,
+        padKey,
+        parsed.rowIdx === 6
+          ? "strip G8 · reverb decay/room max (D4 R4)"
+          : "strip H8 · reverb pre-delay/wet max (P4 W4)",
+      ]);
+      return;
+    }
+    if (store.scene7DelayMenuHeld) {
+      if (parsed.rowIdx === 6) {
+        applyScene7TimeStep(4);
+        applyScene7FeedbackStep(4);
+      } else {
+        applyScene7MixStep(4);
+        applyScene7ToneStep(4);
+      }
+      setMidiDebugLine([
+        port.slice(0, 56),
+        raw,
+        padKey,
+        parsed.rowIdx === 6
+          ? "strip G8 · delay time/feedback max (T4 F4)"
+          : "strip H8 · delay mix/tone max (M4 N4)",
+      ]);
+      return;
+    }
+    if (store.scene5CompressorMenuHeld) {
+      if (parsed.rowIdx === 6) applyScene5ThresholdStep(8);
+      else applyScene5MakeupStep(8);
+      setMidiDebugLine([
+        port.slice(0, 56),
+        raw,
+        padKey,
+        parsed.rowIdx === 6 ? "strip G8 · compressor threshold 8/8" : "strip H8 · compressor makeup 8/8",
+      ]);
+      return;
+    }
+    if (store.scene4EqMenuHeld) {
+      if (parsed.rowIdx === 6) applyScene4HighPassStep(8);
+      else applyScene4LowPassStep(8);
+      setMidiDebugLine([
+        port.slice(0, 56),
+        raw,
+        padKey,
+        parsed.rowIdx === 6 ? "strip G8 · high-pass 8/8" : "strip H8 · low-pass 8/8",
+      ]);
+      return;
+    }
     if (store.g4DistortionMenuHeld) {
       if (parsed.rowIdx === 6) applyG4DistortionDriveStep(8);
       else applyG4DistortionToneLevel(4);
@@ -4694,6 +6949,58 @@ function handleMidiMessage(ev) {
   }
 
   const clipCell = padKeyToSessionCell(padKey, store.pack.nRows);
+  if (clipCell && store.scene8ReverbMenuHeld && vel > 0) {
+    if (isG7ClipMultiSelectSessionPadKey(padKey)) {
+      const selLoopId = getLoopIdForSessionClipPadOrScan(padKey);
+      if (selLoopId != null) toggleScene8ClipLoopSelection(selLoopId);
+    }
+    setMidiDebugLine([
+      port.slice(0, 56),
+      raw,
+      padKey,
+      "reverb menu · clip pad (toggle selection 1A…8F)",
+    ]);
+    return;
+  }
+  if (clipCell && store.scene7DelayMenuHeld && vel > 0) {
+    if (isG7ClipMultiSelectSessionPadKey(padKey)) {
+      const selLoopId = getLoopIdForSessionClipPadOrScan(padKey);
+      if (selLoopId != null) toggleScene7ClipLoopSelection(selLoopId);
+    }
+    setMidiDebugLine([
+      port.slice(0, 56),
+      raw,
+      padKey,
+      "delay menu · clip pad (toggle selection 1A…8F)",
+    ]);
+    return;
+  }
+  if (clipCell && store.scene5CompressorMenuHeld && vel > 0) {
+    if (isG7ClipMultiSelectSessionPadKey(padKey)) {
+      const selLoopId = getLoopIdForSessionClipPadOrScan(padKey);
+      if (selLoopId != null) toggleScene5ClipLoopSelection(selLoopId);
+    }
+    setMidiDebugLine([
+      port.slice(0, 56),
+      raw,
+      padKey,
+      "compressor menu · clip pad (toggle selection 1A…8F)",
+    ]);
+    return;
+  }
+  if (clipCell && store.scene4EqMenuHeld && vel > 0) {
+    if (isG7ClipMultiSelectSessionPadKey(padKey)) {
+      const selLoopId = getLoopIdForSessionClipPadOrScan(padKey);
+      if (selLoopId != null) toggleScene4ClipLoopSelection(selLoopId);
+    }
+    setMidiDebugLine([
+      port.slice(0, 56),
+      raw,
+      padKey,
+      "spectrum EQ menu · clip pad (toggle selection 1A…8F)",
+    ]);
+    return;
+  }
   if (clipCell && store.g4DistortionMenuHeld && vel > 0) {
     if (isG7ClipMultiSelectSessionPadKey(padKey)) {
       const selLoopId = getLoopIdForSessionClipPadOrScan(padKey);
@@ -4737,6 +7044,104 @@ function handleMidiMessage(ev) {
   }
 
   if (!clipCell && (parsed.rowIdx === 6 || parsed.rowIdx === 7)) {
+    if (parsed.rowIdx === 6 && store.scene8ReverbMenuHeld && vel > 0) {
+      applyScene8StripG(parsed.col);
+      setMidiDebugLine([
+        port.slice(0, 56),
+        raw,
+        padKey,
+        parsed.col <= 3
+          ? `strip G · reverb decay D${parsed.col + 1}`
+          : `strip G · reverb room R${parsed.col - 3}`,
+      ]);
+      return;
+    }
+    if (parsed.rowIdx === 7 && store.scene8ReverbMenuHeld && vel > 0) {
+      applyScene8StripH(parsed.col);
+      setMidiDebugLine([
+        port.slice(0, 56),
+        raw,
+        padKey,
+        parsed.col <= 3
+          ? `strip H · reverb pre-delay P${parsed.col + 1}`
+          : `strip H · reverb wet W${parsed.col - 3}`,
+      ]);
+      return;
+    }
+    if (parsed.rowIdx === 6 && store.scene7DelayMenuHeld && vel > 0) {
+      applyScene7StripG(parsed.col);
+      setMidiDebugLine([
+        port.slice(0, 56),
+        raw,
+        padKey,
+        parsed.col <= 3
+          ? `strip G · delay time T${parsed.col + 1}`
+          : `strip G · delay feedback F${parsed.col - 3}`,
+      ]);
+      return;
+    }
+    if (parsed.rowIdx === 7 && store.scene7DelayMenuHeld && vel > 0) {
+      applyScene7StripH(parsed.col);
+      setMidiDebugLine([
+        port.slice(0, 56),
+        raw,
+        padKey,
+        parsed.col <= 3
+          ? `strip H · delay mix M${parsed.col + 1}`
+          : `strip H · delay tone N${parsed.col - 3}`,
+      ]);
+      return;
+    }
+    if (parsed.rowIdx === 6 && store.scene5CompressorMenuHeld && vel > 0) {
+      applyScene5ThresholdStep(parsed.col + 1);
+      setMidiDebugLine([
+        port.slice(0, 56),
+        raw,
+        padKey,
+        `strip G · compressor threshold ${parsed.col + 1}/8`,
+      ]);
+      return;
+    }
+    if (parsed.rowIdx === 7 && store.scene5CompressorMenuHeld && vel > 0) {
+      if (parsed.col <= 3) {
+        applyScene5RatioStep(parsed.col + 1);
+        setMidiDebugLine([
+          port.slice(0, 56),
+          raw,
+          padKey,
+          `strip H · compressor ratio R${parsed.col + 1}`,
+        ]);
+      } else {
+        applyScene5MakeupStep(parsed.col + 1);
+        setMidiDebugLine([
+          port.slice(0, 56),
+          raw,
+          padKey,
+          `strip H · compressor makeup M${parsed.col + 1}`,
+        ]);
+      }
+      return;
+    }
+    if (parsed.rowIdx === 6 && store.scene4EqMenuHeld && vel > 0) {
+      applyScene4HighPassStep(parsed.col + 1);
+      setMidiDebugLine([
+        port.slice(0, 56),
+        raw,
+        padKey,
+        `strip G · high-pass ${parsed.col + 1}/8`,
+      ]);
+      return;
+    }
+    if (parsed.rowIdx === 7 && store.scene4EqMenuHeld && vel > 0) {
+      applyScene4LowPassStep(parsed.col + 1);
+      setMidiDebugLine([
+        port.slice(0, 56),
+        raw,
+        padKey,
+        `strip H · low-pass ${parsed.col + 1}/8`,
+      ]);
+      return;
+    }
     if (parsed.rowIdx === 6 && store.g4DistortionMenuHeld && vel > 0) {
       applyG4DistortionDriveStep(parsed.col + 1);
       setMidiDebugLine([

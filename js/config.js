@@ -160,7 +160,7 @@ export const LP_SESSION_G6_STEREO_MENU = {
   stripStepCurrentH: 3,
 };
 
-/** Distortion menu (scene row 4 / CC **59**): row **G** = drive 1…8, row **H** = OS / clip / tone. */
+/** Distortion menu (scene row 6 / CC **39**): row **G** = drive 1…8, row **H** = OS / clip / tone. */
 export const LP_SESSION_G4_DISTORTION_MENU = {
   clipPurple: 48,
   stripRowG: 5,
@@ -171,8 +171,63 @@ export const LP_SESSION_G4_DISTORTION_MENU = {
   stripH1: 3,
   stripH2: 37,
   stripH3: 21,
-  stripH4: 13,
+  /** H4 lit: soft clip (blue) vs hard clip (red) — must contrast stripRowH (62 orange). */
+  stripH4Soft: 37,
+  stripH4Hard: 5,
   stripTone: [41, 37, 21, 13],
+};
+
+/** Scene row 4 EQ menu: row **G** = high-pass 1…8, row **H** = low-pass 1…8 (spectrum sweep). */
+export const LP_SESSION_SCENE4_EQ_MENU = {
+  clipPurple: 48,
+  stripRowG: 41,
+  stripRowH: 21,
+  stripStepApplyYellow: 13,
+  stripStepQueryPurple: 48,
+  stripStepCurrentG: 37,
+  stripStepCurrentH: 37,
+};
+
+/** Scene row 5 compressor menu: row **G** = threshold 1…8; **H1–H4** = ratio, **H5–H8** = makeup. */
+export const LP_SESSION_SCENE5_COMP_MENU = {
+  clipPurple: 48,
+  stripRowG: 13,
+  stripRowH: 62,
+  stripStepApplyYellow: 13,
+  stripStepQueryPurple: 48,
+  stripStepCurrentG: 37,
+  stripRatioLit: [41, 37, 21, 13],
+  stripMakeupLit: [3, 37, 21, 5],
+};
+
+/** Scene row 7 delay menu: **G1–G4** time (blue), **G5–G8** feedback (red); **H1–H4** mix (purple), **H5–H8** tone (green). */
+export const LP_SESSION_SCENE7_DELAY_MENU = {
+  clipPurple: 48,
+  stripGTime: 41,
+  stripGFeedback: 5,
+  stripHMix: 48,
+  stripHTone: 21,
+  stripStepApplyYellow: 13,
+  stripStepQueryPurple: 48,
+  stripTimeLit: [41, 37, 21, 13],
+  stripFeedbackLit: [5, 7, 13, 21],
+  stripMixLit: [48, 13, 37, 21],
+  stripToneLit: [21, 37, 13, 5],
+};
+
+/** Scene row 8 reverb menu: **G1–G4** decay (blue), **G5–G8** room (green); **H1–H4** pre-delay (yellow), **H5–H8** wet (purple). */
+export const LP_SESSION_SCENE8_REVERB_MENU = {
+  clipPurple: 48,
+  stripGDecay: 41,
+  stripGRoom: 21,
+  stripHPreDelay: 13,
+  stripHWet: 48,
+  stripStepApplyYellow: 13,
+  stripStepQueryPurple: 48,
+  stripDecayLit: [41, 37, 21, 13],
+  stripRoomLit: [21, 37, 13, 5],
+  stripPreDelayLit: [13, 37, 21, 5],
+  stripWetLit: [48, 13, 37, 21],
 };
 
 /** Row **H** strip `1H`…`7H` idle — Novation RGB LUT velocity **3** (`FD FD FD`, white). **`8H`** uses `LP_SESSION_G_SYNC.col8Inert` (teal). */
@@ -195,20 +250,37 @@ export const SYNC_LOOP_TICKS_STORAGE_KEY = `${STORAGE_KEY_PREFIX}syncPurpleTicks
 export const MINI_MK3_STEREO_PAN_CC = 69;
 export const MINI_MK3_STEREO_PAN_IDLE_LED = LP_SESSION_PALETTE.armed;
 
-/** Right column row 4 (CC **59**): hold for per-clip distortion (web side panel row **D**). */
-export const MINI_MK3_DISTORTION_CC = 59;
-export const MINI_MK3_DISTORTION_IDLE_LED = LP_SESSION_PALETTE.armed;
+/** Right column row 4 (CC **59**): hold for spectrum EQ — row **G** = HPF, row **H** = LPF (web side panel row **D**). */
+export const MINI_MK3_SCENE4_EQ_CC = 59;
+export const MINI_MK3_SCENE4_EQ_SCENE_IDLE_LED = LP_SESSION_PALETTE.idleOddColumn;
+
+/** Right column row 5 (CC **49**): hold for compressor (web side panel row **E**). */
+export const MINI_MK3_SCENE5_COMP_CC = 49;
+export const MINI_MK3_SCENE5_COMP_SCENE_IDLE_LED = LP_SESSION_PALETTE.idleEvenColumn;
+
+/** Right column row 7 (CC **29**): hold for delay (web side panel row **G**). */
+export const MINI_MK3_SCENE7_DELAY_CC = 29;
+export const MINI_MK3_SCENE7_DELAY_SCENE_IDLE_LED = LP_SESSION_PALETTE.idleOddColumn;
+
+/** Right column row 8 (CC **19**): hold for reverb (web side panel row **H**). */
+export const MINI_MK3_SCENE8_REVERB_CC = 19;
+export const MINI_MK3_SCENE8_REVERB_SCENE_IDLE_LED = LP_SESSION_PALETTE.idleEvenColumn;
+
+/** Right column row 6 (CC **39**): hold for per-clip distortion (web side panel row **F**). */
+export const MINI_MK3_DISTORTION_CC = 39;
+export const MINI_MK3_DISTORTION_SCENE_IDLE_LED = LP_SESSION_PALETTE.idleEvenColumn;
+export const MINI_MK3_DISTORTION_IDLE_LED = MINI_MK3_DISTORTION_SCENE_IDLE_LED;
 
 export const MINI_MK3_PANEL_RIGHT_CC = new Map([
   [99, "Logo (top row, CC)"],
   [89, "Scene launch row 1 (right column, CC)"],
   [79, "Scene launch row 2 (right column, CC)"],
   [69, "Scene launch row 3 — stereo pan (right column, CC)"],
-  [59, "Scene launch row 4 (right column, CC)"],
-  [49, "Scene launch row 5 (right column, CC)"],
-  [39, "Scene launch row 6 (right column, CC)"],
-  [29, "Scene launch row 7 (right column, CC)"],
-  [19, "Stop / Solo / Mute strip (bottom, CC)"],
+  [59, "Scene launch row 4 — spectrum EQ (HPF row G, LPF row H, CC)"],
+  [49, "Scene launch row 5 — compressor (threshold G, ratio H1–H4, makeup H5–H8, CC)"],
+  [39, "Scene launch row 6 — distortion (right column, CC)"],
+  [29, "Scene launch row 7 — delay (time G1–G4, feedback G5–G8, mix H1–H4, tone H5–H8, CC)"],
+  [19, "Scene launch row 8 — reverb (decay G1–G4, room G5–G8, pre-delay H1–H4, wet H5–H8, CC)"],
 ]);
 
 export const SESSION_CLIP_LEGEND_SWATCHES = [

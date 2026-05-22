@@ -758,6 +758,16 @@
       font-weight: 700;
       font-size: 0.52rem;
     }
+    button.pad.side-panel.side-panel-scene4-eq-idle {
+      background: #0c2e1a !important;
+      border-color: #16a34a !important;
+      color: #dcfce7 !important;
+    }
+    button.pad.side-panel.side-panel-scene4-eq-idle .nm {
+      color: #dcfce7 !important;
+      font-weight: 700;
+      font-size: 0.52rem;
+    }
     button.pad.side-panel.side-panel-distortion-idle {
       background: #422006 !important;
       border-color: #ea580c !important;
@@ -776,6 +786,10 @@
     button.pad.side-panel[data-side-panel-stereo="true"].g6-stereo-menu-held {
       filter: brightness(1.12);
       box-shadow: 0 0 0 2px #a855f7;
+    }
+    button.pad.side-panel[data-side-panel-scene4-eq="true"].scene4-eq-menu-held {
+      filter: brightness(1.12);
+      box-shadow: 0 0 0 2px #22c55e;
     }
     button.pad.side-panel[data-side-panel-distortion="true"].g4-distortion-menu-held {
       filter: brightness(1.12);
@@ -853,7 +867,224 @@
     #pad-grid.g6-stereo-menu-active .pad.utility[data-h8-clock-menu-strip="true"].h8-pan-step-strip.g6-h-strip-step-current .nm {
       color: #1f2937 !important;
     }
-    /* Distortion menu (scene row 4 / CC 59): purple = selected / drive-query match; row G = drive 1…8, row H = OS / clip / tone. */
+    /* Spectrum EQ menu (scene row 4 / CC 59): row G = HPF 1…8, row H = LPF 1…8 (before distortion). */
+    #pad-grid.scene4-eq-menu-active button.pad[data-loop-id].scene4-clip-selected,
+    #pad-grid.scene4-eq-menu-active button.pad[data-loop-id].scene4-clip-eq-match {
+      outline: 3px solid #22c55e;
+      outline-offset: 1px;
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.45), inset 0 0 0 1px rgba(34, 197, 94, 0.2);
+    }
+    #pad-grid.scene4-eq-menu-active .pad.utility[data-utility-row="6"].scene4-g-hp-strip,
+    #pad-grid.scene4-eq-menu-active .pad.utility[data-g8-volume-hold-strip="true"].scene4-g-hp-strip {
+      background: #0c2e1a !important;
+      border-color: #166534 !important;
+      color: #bbf7d0 !important;
+    }
+    #pad-grid.scene4-eq-menu-active .pad.utility[data-utility-row="7"].scene4-h-lp-strip,
+    #pad-grid.scene4-eq-menu-active .pad.utility[data-h8-clock-menu-strip="true"].scene4-h8-lp-max-strip {
+      background: #052e16 !important;
+      border-color: #15803d !important;
+      color: #86efac !important;
+    }
+    #pad-grid.scene4-eq-menu-active .pad.utility[data-utility-row="6"].scene4-g-strip-step-apply,
+    #pad-grid.scene4-eq-menu-active .pad.utility[data-utility-row="7"].scene4-h-strip-step-apply {
+      background: var(--pad-playing) !important;
+      border-color: var(--pad-playing-border) !important;
+    }
+    #pad-grid.scene4-eq-menu-active .pad.utility[data-utility-row="6"].scene4-g-strip-step-query,
+    #pad-grid.scene4-eq-menu-active .pad.utility[data-utility-row="7"].scene4-h-strip-step-query {
+      background: #4c1d7a !important;
+      border-color: #9333ea !important;
+      color: #f5e9ff !important;
+    }
+    #pad-grid.scene4-eq-menu-active .pad.utility[data-utility-row="6"].scene4-g-strip-step-current,
+    #pad-grid.scene4-eq-menu-active .pad.utility[data-utility-row="7"].scene4-h-strip-step-current {
+      background: #ffffff !important;
+      border-color: #d1d5db !important;
+      color: #1f2937 !important;
+    }
+    button.pad.side-panel[data-side-panel-scene4-eq="true"].scene4-eq-menu-held {
+      background: #14532d !important;
+      border-color: #22c55e !important;
+    }
+    button.pad .eq-lvl {
+      position: absolute;
+      left: 3px;
+      bottom: 26px;
+      font-size: 0.52rem;
+      line-height: 1;
+      color: #86efac;
+      opacity: 0.95;
+      pointer-events: none;
+    }
+    /* Compressor menu (scene row 5 / CC 49): G = threshold; H1–H4 = ratio, H5–H8 = makeup. */
+    #pad-grid.scene5-comp-menu-active button.pad[data-loop-id].scene5-clip-selected,
+    #pad-grid.scene5-comp-menu-active button.pad[data-loop-id].scene5-clip-comp-match {
+      outline: 3px solid #eab308;
+      outline-offset: 1px;
+      box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.45), inset 0 0 0 1px rgba(234, 179, 8, 0.2);
+    }
+    #pad-grid.scene5-comp-menu-active .pad.utility[data-utility-row="6"].scene5-g-thr-strip,
+    #pad-grid.scene5-comp-menu-active .pad.utility[data-g8-volume-hold-strip="true"].scene5-g-thr-strip {
+      background: #422006 !important;
+      border-color: #a16207 !important;
+      color: #fef9c3 !important;
+    }
+    #pad-grid.scene5-comp-menu-active .pad.utility[data-utility-row="7"].scene5-h-ratio-strip {
+      background: #1e3a5f !important;
+      border-color: #2563eb !important;
+      color: #dbeafe !important;
+    }
+    #pad-grid.scene5-comp-menu-active .pad.utility[data-utility-row="7"].scene5-h-makeup-strip,
+    #pad-grid.scene5-comp-menu-active .pad.utility[data-h8-clock-menu-strip="true"].scene5-h-makeup-strip {
+      background: #3b0764 !important;
+      border-color: #7c3aed !important;
+      color: #ede9fe !important;
+    }
+    #pad-grid.scene5-comp-menu-active .pad.utility[data-utility-row="6"].scene5-g-strip-step-apply,
+    #pad-grid.scene5-comp-menu-active .pad.utility[data-utility-row="7"].scene5-h-strip-lit {
+      background: var(--pad-playing) !important;
+      border-color: var(--pad-playing-border) !important;
+    }
+    #pad-grid.scene5-comp-menu-active .pad.utility[data-utility-row="6"].scene5-g-strip-step-query {
+      background: #4c1d7a !important;
+      border-color: #9333ea !important;
+      color: #f5e9ff !important;
+    }
+    #pad-grid.scene5-comp-menu-active .pad.utility[data-utility-row="6"].scene5-g-strip-step-current {
+      background: #ffffff !important;
+      border-color: #d1d5db !important;
+      color: #1f2937 !important;
+    }
+    button.pad.side-panel.side-panel-scene5-comp-idle {
+      background: #422006 !important;
+      border-color: #ca8a04 !important;
+      color: #fef9c3 !important;
+    }
+    button.pad.side-panel.side-panel-scene5-comp-idle .nm {
+      color: #fef9c3 !important;
+      font-weight: 700;
+      font-size: 0.52rem;
+    }
+    button.pad.side-panel[data-side-panel-scene5-comp="true"].scene5-comp-menu-held {
+      filter: brightness(1.12);
+      box-shadow: 0 0 0 2px #eab308;
+    }
+    button.pad .comp-lvl {
+      position: absolute;
+      left: 3px;
+      bottom: 38px;
+      font-size: 0.52rem;
+      line-height: 1;
+      color: #fde047;
+      opacity: 0.95;
+      pointer-events: none;
+    }
+    /* Delay menu (scene row 7 / CC 29): G1–G4 time (blue), G5–G8 feedback (red), H1–H4 mix (purple), H5–H8 tone (green). */
+    #pad-grid.scene7-delay-menu-active button.pad[data-loop-id].scene7-clip-selected,
+    #pad-grid.scene7-delay-menu-active button.pad[data-loop-id].scene7-clip-delay-match {
+      outline: 3px solid #a855f7;
+      outline-offset: 1px;
+      box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.45), inset 0 0 0 1px rgba(168, 85, 247, 0.2);
+    }
+    #pad-grid.scene7-delay-menu-active .pad.utility[data-utility-row="6"].scene7-g-time-zone {
+      background: #084878 !important;
+      border-color: #2563eb !important;
+      color: #dbeafe !important;
+    }
+    #pad-grid.scene7-delay-menu-active .pad.utility[data-utility-row="6"].scene7-g-fb-zone {
+      background: #450a0a !important;
+      border-color: #dc2626 !important;
+      color: #fecaca !important;
+    }
+    #pad-grid.scene7-delay-menu-active .pad.utility[data-utility-row="7"].scene7-h-mix-zone {
+      background: #3b0764 !important;
+      border-color: #9333ea !important;
+      color: #f5e9ff !important;
+    }
+    #pad-grid.scene7-delay-menu-active .pad.utility[data-utility-row="7"].scene7-h-tone-zone {
+      background: #052e16 !important;
+      border-color: #16a34a !important;
+      color: #bbf7d0 !important;
+    }
+    #pad-grid.scene7-delay-menu-active .pad.utility.scene7-g-strip-step-apply,
+    #pad-grid.scene7-delay-menu-active .pad.utility.scene7-h-strip-step-apply {
+      background: var(--pad-playing) !important;
+      border-color: var(--pad-playing-border) !important;
+    }
+    #pad-grid.scene7-delay-menu-active .pad.utility.scene7-g-strip-step-query,
+    #pad-grid.scene7-delay-menu-active .pad.utility.scene7-h-strip-step-query {
+      background: #4c1d7a !important;
+      border-color: #9333ea !important;
+      color: #f5e9ff !important;
+    }
+    button.pad.side-panel[data-side-panel-scene7-delay="true"].scene7-delay-menu-held {
+      background: #4c1d95 !important;
+      border-color: #a855f7 !important;
+    }
+    button.pad .dly-lvl {
+      position: absolute;
+      left: 3px;
+      bottom: 50px;
+      font-size: 0.52rem;
+      line-height: 1;
+      color: #c4b5fd;
+      opacity: 0.95;
+      pointer-events: none;
+    }
+    /* Reverb menu (scene row 8 / CC 19): G1–G4 decay (blue), G5–G8 room (green), H1–H4 pre-delay (yellow), H5–H8 wet (purple). */
+    #pad-grid.scene8-reverb-menu-active button.pad[data-loop-id].scene8-clip-selected,
+    #pad-grid.scene8-reverb-menu-active button.pad[data-loop-id].scene8-clip-reverb-match {
+      outline: 3px solid #a855f7;
+      outline-offset: 1px;
+      box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.45), inset 0 0 0 1px rgba(168, 85, 247, 0.2);
+    }
+    #pad-grid.scene8-reverb-menu-active .pad.utility[data-utility-row="6"].scene8-g-decay-zone {
+      background: #084878 !important;
+      border-color: #2563eb !important;
+      color: #dbeafe !important;
+    }
+    #pad-grid.scene8-reverb-menu-active .pad.utility[data-utility-row="6"].scene8-g-room-zone {
+      background: #052e16 !important;
+      border-color: #16a34a !important;
+      color: #bbf7d0 !important;
+    }
+    #pad-grid.scene8-reverb-menu-active .pad.utility[data-utility-row="7"].scene8-h-predelay-zone {
+      background: #422006 !important;
+      border-color: #ca8a04 !important;
+      color: #fef9c3 !important;
+    }
+    #pad-grid.scene8-reverb-menu-active .pad.utility[data-utility-row="7"].scene8-h-wet-zone {
+      background: #3b0764 !important;
+      border-color: #9333ea !important;
+      color: #f5e9ff !important;
+    }
+    #pad-grid.scene8-reverb-menu-active .pad.utility.scene8-g-strip-step-apply,
+    #pad-grid.scene8-reverb-menu-active .pad.utility.scene8-h-strip-step-apply {
+      background: var(--pad-playing) !important;
+      border-color: var(--pad-playing-border) !important;
+    }
+    #pad-grid.scene8-reverb-menu-active .pad.utility.scene8-g-strip-step-query,
+    #pad-grid.scene8-reverb-menu-active .pad.utility.scene8-h-strip-step-query {
+      background: #4c1d7a !important;
+      border-color: #9333ea !important;
+      color: #f5e9ff !important;
+    }
+    button.pad.side-panel[data-side-panel-scene8-reverb="true"].scene8-reverb-menu-held {
+      background: #4c1d95 !important;
+      border-color: #a855f7 !important;
+    }
+    button.pad .rev-lvl {
+      position: absolute;
+      left: 3px;
+      bottom: 62px;
+      font-size: 0.52rem;
+      line-height: 1;
+      color: #e9d5ff;
+      opacity: 0.95;
+      pointer-events: none;
+    }
+    /* Distortion menu (scene row 6 / CC 39): purple = selected / drive-query match; row G = drive 1…8, row H = OS / clip / tone. */
     #pad-grid.g4-distortion-menu-active button.pad[data-loop-id].g4-clip-selected,
     #pad-grid.g4-distortion-menu-active button.pad[data-loop-id].g4-clip-drive-match {
       outline: 3px solid #f97316;
@@ -878,6 +1109,24 @@
       background: #0b2d5c !important;
       border-color: #2563eb !important;
       color: #dbeafe !important;
+    }
+    #pad-grid.g4-distortion-menu-active .pad.utility[data-utility-row="7"].g4-h-clip-soft-lit {
+      background: #0b2d5c !important;
+      border-color: #38bdf8 !important;
+      color: #e0f2fe !important;
+    }
+    #pad-grid.g4-distortion-menu-active .pad.utility[data-utility-row="7"].g4-h-clip-soft-lit .nm {
+      color: #e0f2fe !important;
+      font-weight: 700;
+    }
+    #pad-grid.g4-distortion-menu-active .pad.utility[data-utility-row="7"].g4-h-clip-hard-lit {
+      background: #450a0a !important;
+      border-color: #ef4444 !important;
+      color: #fecaca !important;
+    }
+    #pad-grid.g4-distortion-menu-active .pad.utility[data-utility-row="7"].g4-h-clip-hard-lit .nm {
+      color: #fecaca !important;
+      font-weight: 700;
     }
     button.pad.side-panel[data-side-panel-distortion="true"].g4-distortion-menu-held {
       background: #7c2d12 !important;
@@ -946,27 +1195,27 @@
       color: #dbeafe !important;
     }
     /* Idle row **H** (light strip) when neither volume nor pan menu is active. */
-    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active) .pad.utility[data-utility-row="7"]:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) {
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active):not(.scene4-eq-menu-active):not(.scene5-comp-menu-active):not(.scene7-delay-menu-active):not(.scene8-reverb-menu-active) .pad.utility[data-utility-row="7"]:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) {
       background: var(--pad-strip-h) !important;
       border-color: var(--pad-strip-h-border) !important;
       color: var(--pad-strip-h-text) !important;
     }
-    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active) .pad.utility[data-utility-row="7"]:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) .nm {
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active):not(.scene4-eq-menu-active):not(.scene5-comp-menu-active):not(.scene7-delay-menu-active):not(.scene8-reverb-menu-active) .pad.utility[data-utility-row="7"]:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) .nm {
       color: var(--pad-strip-h-text) !important;
     }
-    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active) .pad.utility[data-utility-row="7"]:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]):hover {
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active):not(.scene4-eq-menu-active):not(.scene5-comp-menu-active):not(.scene7-delay-menu-active):not(.scene8-reverb-menu-active) .pad.utility[data-utility-row="7"]:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]):hover {
       background: #f2f4fa !important;
       border-color: #8c9ab8 !important;
     }
-    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active) .pad.utility[data-utility-row="7"].h-stop-modifier-held:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) {
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active):not(.scene4-eq-menu-active):not(.scene5-comp-menu-active):not(.scene7-delay-menu-active):not(.scene8-reverb-menu-active) .pad.utility[data-utility-row="7"].h-stop-modifier-held:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) {
       background: #422006 !important;
       border-color: #ea580c !important;
       color: #ffedd5 !important;
     }
-    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active) .pad.utility[data-utility-row="7"].h-stop-modifier-held:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) .nm {
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active):not(.scene4-eq-menu-active):not(.scene5-comp-menu-active):not(.scene7-delay-menu-active):not(.scene8-reverb-menu-active) .pad.utility[data-utility-row="7"].h-stop-modifier-held:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]) .nm {
       color: #ffedd5 !important;
     }
-    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active) .pad.utility[data-utility-row="7"].h-stop-modifier-held:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]):hover {
+    #pad-grid:not(.g7-volume-menu-active):not(.g6-stereo-menu-active):not(.g4-distortion-menu-active):not(.scene4-eq-menu-active):not(.scene5-comp-menu-active):not(.scene7-delay-menu-active):not(.scene8-reverb-menu-active) .pad.utility[data-utility-row="7"].h-stop-modifier-held:not([data-h8-clock-menu-strip="true"]):not([data-g8-volume-hold-strip="true"]):hover {
       background: #7c2d12 !important;
       border-color: #f97316 !important;
     }
@@ -1186,7 +1435,7 @@
         <li><strong>G1–G7</strong> — hold to mute column (release unmutes on hardware note off; web uses hold). Playing clips turn <strong>white</strong> while muted.</li>
         <li><strong>volume</strong> (8G) — hold or click to lock the clip volume menu; row <strong>H</strong> shows <code>1/8</code>…<code>8/8</code> (<strong>8H</strong> = max).</li>
         <li><strong>Right column row 3</strong> (web row <strong>C</strong>, orange <strong>pan</strong> / Mini MK3 CC <strong>69</strong>) — hold for <strong>stereo pan</strong>: select clips <code>1A</code>…<code>8F</code>; row <strong>G</strong> = left <code>L1</code>…<code>L8</code>, row <strong>H</strong> = right <code>R1</code>…<code>R8</code> (<strong>L+R=8</strong>, e.g. <code>G8</code>→<code>R0</code>, <code>H8</code>→<code>L0</code>, <code>G4</code>→<code>R4</code>).</li>
-        <li><strong>Right column row 4</strong> (web row <strong>D</strong>, <strong>dist</strong> / Mini MK3 CC <strong>59</strong>) — hold for <strong>distortion</strong>: select clips <code>1A</code>…<code>8F</code>; row <strong>G</strong> = drive <code>1/8</code>…<code>8/8</code>; row <strong>H</strong>: <code>H1</code>–<code>H3</code> oversample (none / 2× / 4×), <code>H4</code> soft/hard clip, <code>H5</code>–<code>H8</code> tone LPF.</li>
+        <li><strong>Right column row 6</strong> (web side <strong>F</strong> = <strong>dist</strong>, Launchpad scene 6 / CC <strong>39</strong>) — hold for <strong>distortion</strong>: select clips <code>1A</code>…<code>8F</code>; row <strong>G</strong> strip = drive <code>1/8</code>…<code>8/8</code>; row <strong>H</strong>: <code>H1</code>–<code>H3</code> oversample, <code>H4</code> soft/hard clip, <code>H5</code>–<code>H8</code> tone LPF.</li>
         <li><strong>H1–H7</strong> — hold <strong>stop col</strong> (orange): nothing stops until you tap a <strong>clip</strong> in that column or press <strong>G</strong> (<strong>stop col</strong>, white) to stop the whole column.</li>
         <li><strong>8H</strong> — <code>8/8</code> max volume while the volume menu is active; <strong>R8</strong> while pan is active; otherwise <strong>hold or click to lock</strong> <strong>clock tick sync</strong> and pick ticks with <strong>8A</strong>…<strong>8F</strong>.</li>
         <li><strong>1G</strong>…<strong>7G</strong> — one <strong>purple</strong> pad moves as a visual bar clock (8 steps per loop).</li>
@@ -1223,6 +1472,6 @@
     </section>
   </footer>
 
-  <script type="module" src="./app.js?v=20260524distort"></script>
+  <script type="module" src="./app.js?v=20260524distrow6"></script>
 </body>
 </html>

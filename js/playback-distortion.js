@@ -18,14 +18,15 @@ export function makeDistortionCurve(driveStep, softClip) {
   const curve = new Float32Array(n);
   const step = Math.max(1, Math.min(8, Math.floor(Number(driveStep)) || 1));
   const amount = 0.35 + (step - 1) * (3.8 / 7);
-  const k = amount * 8;
+  const k = amount * 6;
+  const norm = Math.tanh(k) || 1;
   for (let i = 0; i < n; i += 1) {
     const x = (i * 2) / n - 1;
     if (softClip) {
-      curve[i] = Math.tanh(k * x) / Math.tanh(k);
+      curve[i] = Math.tanh(k * x) / norm;
     } else {
-      const y = k * x;
-      curve[i] = Math.max(-1, Math.min(1, y));
+      const g = k * 2.4 * x;
+      curve[i] = Math.max(-1, Math.min(1, g));
     }
   }
   return curve;
@@ -46,16 +47,22 @@ export function attachDistortionToVoice(ctx, voice) {
   const drive = ctx.createWaveShaper();
   const tone = ctx.createBiquadFilter();
   tone.type = "lowpass";
+  const input = voice.compressorTail ?? voice.eqTail ?? voice.merger;
+  try {
+    input.disconnect();
+  } catch {
+    /* ignore */
+  }
   try {
     voice.merger.disconnect(voice.gain);
   } catch {
     /* ignore */
   }
-  voice.merger.connect(drive);
+  input.connect(drive);
   drive.connect(tone);
-  tone.connect(voice.gain);
   voice.distortionDrive = drive;
   voice.toneFilter = tone;
+  voice.distortionTail = tone;
   return voice;
 }
 
