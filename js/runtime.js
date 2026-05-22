@@ -138,6 +138,16 @@ function portLooksLikeNovationLaunchpad(portName) {
   return /launchpad|lpmini|lppromk3|\blpx\b|novation/i.test(portName || "");
 }
 
+/**
+ * Right-column scene buttons (CC 89 / 79 / 69 = kind / type / pan) arrive on the DAW port on desktop.
+ * On phone/tablet one USB port has no “DAW” in the name — accept CC when DAW SysEx session mode is on.
+ */
+function launchpadSceneSideCcEligible(port) {
+  if (!portLooksLikeNovationLaunchpad(port)) return false;
+  if (/\bdaw\b/i.test(port)) return true;
+  return Boolean(dom.midiSysex?.checked);
+}
+
 function sessionLightNoteForPadKey(padKey, outputName) {
   if (usesClassicSessionNoteMap(outputName) || (dom.midiSysex?.checked && isMobileSessionHost())) {
     return LAUNCHPAD_PAD_TO_NOTE_CLASSIC[padKey] ?? null;
@@ -3820,14 +3830,14 @@ function handleMidiMessage(ev) {
   const raw = data.length >= 3 ? `raw ${bhex(st)} ${bhex(d1)} ${bhex(d2)}` : "";
 
   if (hi === 0xb0 && d2 === 0) {
-    if (portLooksLikeLaunchpadMiniMk3(port) && /\bdaw\b/i.test(port)) {
+    if (launchpadSceneSideCcEligible(port)) {
       if (d1 === MINI_MK3_CLIP_KIND_LEGEND_CC && store.clipKindLegendHeld) {
         endClipKindLegendHold();
         setMidiDebugLine([
           port.slice(0, 56),
           raw,
           `CC ${d1} val 0`,
-          "Mini MK3 · kind legend released (grid back to normal)",
+          "Launchpad · kind legend released (grid back to normal)",
         ]);
         return;
       }
@@ -3837,7 +3847,7 @@ function handleMidiMessage(ev) {
           port.slice(0, 56),
           raw,
           `CC ${d1} val 0`,
-          "Mini MK3 · type legend released (grid back to normal)",
+          "Launchpad · type legend released (grid back to normal)",
         ]);
         return;
       }
@@ -3847,7 +3857,7 @@ function handleMidiMessage(ev) {
           port.slice(0, 56),
           raw,
           `CC ${d1} val 0`,
-          "Mini MK3 · stereo pan released (right column row 3)",
+          "Launchpad · stereo pan released (right column row 3)",
         ]);
         return;
       }
@@ -3965,14 +3975,14 @@ function handleMidiMessage(ev) {
   if (hi === 0xb0) {
     if (d2 > 0) {
       if (handleLaunchpadMiniMk3PackNavCcPress(port, d1, d2, raw)) return;
-      if (portLooksLikeLaunchpadMiniMk3(port) && /\bdaw\b/i.test(port)) {
+      if (launchpadSceneSideCcEligible(port)) {
         if (d1 === MINI_MK3_CLIP_KIND_LEGEND_CC) {
           if (store.pack) startClipKindLegendHold();
           setMidiDebugLine([
             port.slice(0, 56),
             raw,
             `CC ${d1} val ${d2}`,
-            "Mini MK3 · **hold** — kind / category colours on clip pads",
+            "Launchpad · **hold** — kind / category colours on clip pads",
           ]);
           return;
         }
@@ -3982,7 +3992,7 @@ function handleMidiMessage(ev) {
             port.slice(0, 56),
             raw,
             `CC ${d1} val ${d2}`,
-            "Mini MK3 · **hold** — loop **type** colours on clip pads",
+            "Launchpad · **hold** — loop **type** colours on clip pads",
           ]);
           return;
         }
@@ -3992,13 +4002,13 @@ function handleMidiMessage(ev) {
             port.slice(0, 56),
             raw,
             `CC ${d1} val ${d2}`,
-            "Mini MK3 · **hold** — stereo pan (right col row 3); H=right G=left",
+            "Launchpad · **hold** — stereo pan (right col row 3); H=right G=left",
           ]);
           return;
         }
       }
       const ghostPad = padKeyFromNote(d1, port);
-      const mk3Side = portLooksLikeLaunchpadMiniMk3(port) ? miniMk3PanelRightCcLabel(d1) : null;
+      const mk3Side = portLooksLikeNovationLaunchpad(port) ? miniMk3PanelRightCcLabel(d1) : null;
       if (ghostPad || mk3Side) {
         const parts = [port.slice(0, 56), raw, `CC ${d1} val ${d2}`];
         if (mk3Side) {
