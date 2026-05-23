@@ -62,6 +62,35 @@ After **stub** or **WAV** build, add or confirm `{ slug: "freesound-loops", … 
 
 Select multiple clips in pan mode, then **L** and **R** strips independently (both can show the white “current” step). **8G** / **8H** are special (volume menu / clock), not column mute/stop in those modes.
 
+### Per-clip sound effects
+
+Each playing clip gets its own Web Audio voice. Effects are **per clip** (stored in memory for the session; not saved to `pack.json`). Hold a **Launchpad scene button** (right column) or the matching **web side-panel** label, **select one or more clips** `1A`…`8F`, then use rows **G** and **H** as parameter strips. Only one FX menu is active at a time.
+
+**Signal chain** (each stage is optional — defaults are bypass or minimal):
+
+```text
+stereo pan → spectrum EQ → compressor → distortion → delay → reverb → voice gain → master
+```
+
+| Web side | Launchpad scene (CC) | Module | Row G | Row H |
+|----------|----------------------|--------|-------|-------|
+| **C** pan | row 3 (**69**) | `playback-stereo.js` | **L1…L8** left pan | **R1…R8** right pan (`L+R=8`) |
+| **D** eq | row 4 (**59**) | `playback-spectrum-eq.js` | **G1…G8** high-pass `1/8`…`8/8` | **H1…H8** low-pass `1/8`…`8/8` |
+| **E** comp | row 5 (**49**) | `playback-compressor.js` | **G1…G8** threshold | **H1…H4** ratio · **H5…H8** makeup |
+| **F** dist | row 6 (**39**) | `playback-distortion.js` | **G1…G8** drive | **H1–H3** oversample · **H4** soft/hard clip · **H5–H8** tone LPF |
+| **G** dly | row 7 (**29**) | `playback-delay.js` | **G1–G4** time (blue) · **G5–G8** feedback (red) | **H1–H4** mix (purple) · **H5–H8** tone (green) |
+| **H** rev | row 8 (**19**) | `playback-reverb.js` | **G1–G4** decay (blue) · **G5–G8** room (green) | **H1–H4** pre-delay (yellow) · **H5–H8** wet (purple) |
+
+**Delay** (after distortion): time steps ≈ 60 ms → 500 ms; feedback 4 steps; wet mix 4 steps; tone LPF darkens repeats.
+
+**Reverb** (after delay; input is the delay bus): decay **G1–G4** ≈ 0.5 s (tight room) → 5 s (ambient); **G5–G8** room size (closet → hall); **H1–H4** pre-delay 0 ms → 100 ms; **H5–H8** wet/dry (gentle room → fully washed).
+
+**Strip UX (all FX menus):** tap a strip pad to pick a step — **yellow** applies to selected clips, **purple** highlights clips already at that step when nothing is selected. With exactly one clip selected, its current values light the matching strip pads. Non-default settings show a small badge on the clip pad (`eq-lvl`, `comp-lvl`, `dly-lvl`, `rev-lvl`, etc.).
+
+**8G / 8H shortcuts** while an FX menu is held: **8G** often sets the “max” for row-G parameters (e.g. delay time+feedback, reverb decay+room); **8H** for row-H (e.g. delay mix+tone, reverb pre-delay+wet). Volume (**8G** hold), pan, and clock menus use **8G** / **8H** for their own max shortcuts when those menus are active instead.
+
+Implementation: `runtime.js` → `wireStereoVoice()` chains `attach*ToVoice` / `applyClip*ToVoice` from `js/playback-*.js`. Per-clip params live in `store.js` maps (e.g. `scene7ClipDelayByLoopId`, `scene8ClipReverbByLoopId`). **Do not** call `voice.gain.disconnect()` inside an FX module without reconnecting via `connectVoiceToMaster()` — the delay/reverb modules insert before `voice.gain`, not by severing the master bus.
+
 ---
 
 ## `catalog.json` format (remote pack list)
@@ -477,5 +506,7 @@ python3 -m http.server 8765
 | `app.js` | Boots `js/runtime.js` (bump `?v=` on the import after `js/` changes). |
 | `js/pack-url.js` | Resolve/normalize remote `pack.json` URLs and `file://` → local `soundlib/` paths. |
 | `js/pack-catalog.js` | Parse `catalog.json` manifests and resolve per-pack `pack.json` URLs. |
+| `js/playback-delay.js` | Per-clip delay (scene row 7 / CC 29). |
+| `js/playback-reverb.js` | Per-clip reverb after delay (scene row 8 / CC 19). |
 | `js/runtime.js` | Pack load, grid, MIDI, Web Audio playback. |
 | `js/ARCHITECTURE.md` | Module map and rules for AI/human edits. |

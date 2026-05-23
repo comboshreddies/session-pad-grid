@@ -1434,12 +1434,29 @@
       <ul>
         <li><strong>G1–G7</strong> — hold to mute column (release unmutes on hardware note off; web uses hold). Playing clips turn <strong>white</strong> while muted.</li>
         <li><strong>volume</strong> (8G) — hold or click to lock the clip volume menu; row <strong>H</strong> shows <code>1/8</code>…<code>8/8</code> (<strong>8H</strong> = max).</li>
-        <li><strong>Right column row 3</strong> (web row <strong>C</strong>, orange <strong>pan</strong> / Mini MK3 CC <strong>69</strong>) — hold for <strong>stereo pan</strong>: select clips <code>1A</code>…<code>8F</code>; row <strong>G</strong> = left <code>L1</code>…<code>L8</code>, row <strong>H</strong> = right <code>R1</code>…<code>R8</code> (<strong>L+R=8</strong>, e.g. <code>G8</code>→<code>R0</code>, <code>H8</code>→<code>L0</code>, <code>G4</code>→<code>R4</code>).</li>
-        <li><strong>Right column row 6</strong> (web side <strong>F</strong> = <strong>dist</strong>, Launchpad scene 6 / CC <strong>39</strong>) — hold for <strong>distortion</strong>: select clips <code>1A</code>…<code>8F</code>; row <strong>G</strong> strip = drive <code>1/8</code>…<code>8/8</code>; row <strong>H</strong>: <code>H1</code>–<code>H3</code> oversample, <code>H4</code> soft/hard clip, <code>H5</code>–<code>H8</code> tone LPF.</li>
         <li><strong>H1–H7</strong> — hold <strong>stop col</strong> (orange): nothing stops until you tap a <strong>clip</strong> in that column or press <strong>G</strong> (<strong>stop col</strong>, white) to stop the whole column.</li>
         <li><strong>8H</strong> — <code>8/8</code> max volume while the volume menu is active; <strong>R8</strong> while pan is active; otherwise <strong>hold or click to lock</strong> <strong>clock tick sync</strong> and pick ticks with <strong>8A</strong>…<strong>8F</strong>.</li>
         <li><strong>1G</strong>…<strong>7G</strong> — one <strong>purple</strong> pad moves as a visual bar clock (8 steps per loop).</li>
       </ul>
+    </section>
+
+    <section>
+      <h3>Sound effects (per clip)</h3>
+      <p>
+        Hold a <strong>Launchpad scene button</strong> (right column) or the matching <strong>side-panel</strong> label, select clips <code>1A</code>…<code>8F</code>, then use rows <strong>G</strong> / <strong>H</strong> as parameter strips. Settings apply per clip for this session only (not saved in <code>pack.json</code>).
+      </p>
+      <p><strong>Signal chain:</strong> stereo pan → spectrum EQ → compressor → distortion → delay → reverb → output.</p>
+      <ul>
+        <li><strong>Right column row 3</strong> (web <strong>C</strong> = <strong>pan</strong>, CC <strong>69</strong>) — stereo pan: row <strong>G</strong> = left <code>L1</code>…<code>L8</code>, row <strong>H</strong> = right <code>R1</code>…<code>R8</code> (<strong>L+R=8</strong>).</li>
+        <li><strong>Right column row 4</strong> (web <strong>D</strong> = <strong>eq</strong>, CC <strong>59</strong>) — spectrum EQ (before distortion): row <strong>G</strong> = high-pass <code>1/8</code>…<code>8/8</code>, row <strong>H</strong> = low-pass <code>1/8</code>…<code>8/8</code>.</li>
+        <li><strong>Right column row 5</strong> (web <strong>E</strong> = <strong>comp</strong>, CC <strong>49</strong>) — compressor: row <strong>G</strong> = threshold <code>1/8</code>…<code>8/8</code>; row <strong>H</strong>: <code>H1</code>–<code>H4</code> ratio, <code>H5</code>–<code>H8</code> makeup.</li>
+        <li><strong>Right column row 6</strong> (web <strong>F</strong> = <strong>dist</strong>, CC <strong>39</strong>) — distortion: row <strong>G</strong> = drive <code>1/8</code>…<code>8/8</code>; row <strong>H</strong>: <code>H1</code>–<code>H3</code> oversample, <code>H4</code> soft/hard clip, <code>H5</code>–<code>H8</code> tone LPF.</li>
+        <li><strong>Right column row 7</strong> (web <strong>G</strong> = <strong>dly</strong>, CC <strong>29</strong>) — delay (after distortion): <code>G1</code>–<code>G4</code> time (blue), <code>G5</code>–<code>G8</code> feedback (red), <code>H1</code>–<code>H4</code> mix (purple), <code>H5</code>–<code>H8</code> tone (green).</li>
+        <li><strong>Right column row 8</strong> (web <strong>H</strong> = <strong>rev</strong>, CC <strong>19</strong>) — reverb (after delay): <code>G1</code>–<code>G4</code> decay (blue, ~0.5 s → 5 s), <code>G5</code>–<code>G8</code> room size (green), <code>H1</code>–<code>H4</code> pre-delay (yellow, 0 → 100 ms), <code>H5</code>–<code>H8</code> wet/dry (purple).</li>
+      </ul>
+      <p>
+        While an FX menu is active, <strong>8G</strong> / <strong>8H</strong> set “max” shortcuts for that menu’s row-G / row-H parameters (volume, pan, and clock menus keep their own <strong>8G</strong> / <strong>8H</strong> behaviour when those are held instead). Strip pads flash <strong>yellow</strong> to apply a step to selected clips, or <strong>purple</strong> to show clips already at that step.
+      </p>
     </section>
 
     <section>
