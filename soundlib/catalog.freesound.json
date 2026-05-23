@@ -1,9 +1,9 @@
 {
-  "title": "Freesound loop packs (local WAV)",
+  "title": "Freesound loop packs (local WAV, ≤8s)",
   "packs": [
     {
       "slug": "freesound-loops",
-      "title": "Freesound Loops (WAV \u22648s)"
+      "title": "Freesound Loops (WAV ≤8s)"
     }
   ]
 }

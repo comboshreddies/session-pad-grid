@@ -42,6 +42,7 @@ js/
   ARCHITECTURE.md      → this file
 ```
 
+
 After editing any file under `js/`, bump the `?v=` query on the import in `app.js` so browsers reload ES modules (sub-imports are not cache-busted automatically).
 
 ## Data flow

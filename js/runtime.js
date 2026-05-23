@@ -314,10 +314,11 @@ const SIDE_PANEL_SCENE4_EQ_ROW_IDX = 3;
 /** Web side panel row **E** (5th row) — matches Launchpad scene row 5 (CC 49). */
 const SIDE_PANEL_SCENE5_COMP_ROW_IDX = 4;
 /** Web side panel row **F** (6th row) — matches Launchpad right-column scene row 6 (CC 39). */
+const SIDE_PANEL_DISTORTION_ROW_IDX = 5;
 /** Web side panel row **G** (7th row) — matches Launchpad scene row 7 (CC 29). */
 const SIDE_PANEL_SCENE7_DELAY_ROW_IDX = 6;
+/** Web side panel row **H** (8th row) — matches Launchpad scene row 8 (CC 19). */
 const SIDE_PANEL_SCENE8_REVERB_ROW_IDX = 7;
-const SIDE_PANEL_DISTORTION_ROW_IDX = 5;
 
 function getActiveOneShot(loopId) {
   const sid = String(loopId);
@@ -343,7 +344,7 @@ function normalizeLoopKindKey(loop) {
   if (!loop) return "Unknown";
   const direct = String(loop.kind ?? "").trim();
   if (direct) return direct;
-  /** Many Arcade `pack.json` loops omit `kind`; `category` is the next-best “kind” axis (see `scripts/download_soundlib.py`). */
+  /** Many Arcade `pack.json` loops omit `kind`; `category` is the next-best “kind” axis (see `scripts/scripts/download_soundlib.py`). */
   const cat = String(loop.category ?? "").trim();
   if (cat) return cat;
   const pd =
@@ -356,7 +357,7 @@ function normalizeLoopKindKey(loop) {
 }
 
 /**
- * `loop.url` after `scripts/download_soundlib.py` is like `slug/cat/type/kind/name/file.wav` (≥4 dirs before file).
+ * `loop.url` after `scripts/scripts/download_soundlib.py` is like `slug/cat/type/kind/name/file.wav` (≥4 dirs before file).
  * The **type** folder is one level above **kind** — use it when JSON `type` is only the trigger (`loop`, etc.).
  */
 function typeLegendKeyFromPackUrl(loop) {
@@ -693,6 +694,25 @@ function launchpadSessionPaletteForClipPadKey(padKey) {
       }
     }
   }
+  if (store.g6StereoPanMenuHeld && isG7ClipVolumeGridSessionPadKey(padKey)) {
+    if (loopId != null && store.g6SelectedClipLoopIds.has(String(loopId))) {
+      return LP_SESSION_G6_STEREO_MENU.clipPurple;
+    }
+    const q =
+      store.g6StereoPanStepSelection != null &&
+      store.g6StereoPanStepValue != null &&
+      store.g6SelectedClipLoopIds.size === 0;
+    if (q && loopId != null) {
+      const r = getClipRightPanStep(loopId);
+      const gStrip = getClipLeftPanStripStep(loopId);
+      if (
+        (store.g6StereoPanStepSelection === "right" && r === store.g6StereoPanStepValue) ||
+        (store.g6StereoPanStepSelection === "left" && gStrip === store.g6StereoPanStepValue)
+      ) {
+        return LP_SESSION_G6_STEREO_MENU.clipPurple;
+      }
+    }
+  }
   if (store.clipKindLegendHeld) {
     if (loopId == null) return 1;
     return clipKindLegendPaletteVelocityForLoopId(loopId);
@@ -778,12 +798,8 @@ function refreshLaunchpadSessionClipPadsHardwareOnly() {
       }
     }
   });
-  if (store.scene7DelayMenuHeld) refreshLaunchpadScene7DelayStripHardware();
-  if (store.scene8ReverbMenuHeld) refreshLaunchpadScene8ReverbStripHardware();
-  else if (store.scene5CompressorMenuHeld) refreshLaunchpadScene5CompStripHardware();
-  else if (store.scene4EqMenuHeld) refreshLaunchpadScene4EqStripHardware();
-  else if (store.g4DistortionMenuHeld) refreshLaunchpadG4DistortionStripHardware();
-  else if (store.g7VolumeMenuHeld) refreshLaunchpadG7HStripHardware();
+  if (store.g7VolumeMenuHeld) refreshLaunchpadG7HStripHardware();
+  if (store.g4DistortionMenuHeld) refreshLaunchpadG4DistortionStripHardware();
 }
 
 /** Full clip grid (A–F) + row **G** bar clock (web always; hardware when MIDI connected). */
@@ -1116,9 +1132,66 @@ function wireColLabelScrollButtons() {
   }
 }
 
-/** Mini MK3 ◀ ▶ sample-set + ▲ ▼ session row scroll + scene side CC colours (DAW out). */
+/** Mini MK3 ◀ ▶ sample-set + ▲ ▼ session row scroll (CC colours on DAW out). */
 function refreshLaunchpadMiniMk3PackNavLeds() {
-  refreshLaunchpadSceneSideCcLeds();
+  if (!store.midiAccess) return;
+  const packNavV = Math.min(127, Math.max(0, MINI_MK3_PACK_NAV_LED_PALETTE));
+  const maxScroll = store.pack?.sessionChannelsFull
+    ? getSessionScrollMaxOffsetFromFull(store.pack.sessionChannelsFull)
+    : 0;
+  const off = store.pack?.sessionRowScrollOffset ?? 0;
+  const upV = maxScroll > 0 && off > 0 ? packNavV : 0;
+  const downV = maxScroll > 0 && off < maxScroll ? packNavV : 0;
+  eachLaunchpadSessionLightOutput((output, name) => {
+    if (!portLooksLikeNovationLaunchpad(name)) return;
+    try {
+      output.send(new Uint8Array([0xb0, MINI_MK3_ARROW_LEFT_CC & 0x7f, packNavV]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_ARROW_RIGHT_CC & 0x7f, packNavV]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_ARROW_UP_CC & 0x7f, upV]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_ARROW_DOWN_CC & 0x7f, downV]));
+      const kindTopLed =
+        !store.pack || store.pack.nCols <= 0
+          ? 0
+          : store.clipKindLegendHeld
+            ? LP_SESSION_PALETTE.armed
+            : MINI_MK3_CLIP_LEGEND_KIND_SCENE_IDLE_LED;
+      const typeSceneLed =
+        !store.pack || store.pack.nCols <= 0
+          ? 0
+          : store.clipTypeLegendHeld
+            ? LP_SESSION_PALETTE.armed
+            : MINI_MK3_CLIP_LEGEND_TYPE_SCENE_IDLE_LED;
+      const stereoPanLed =
+        !store.pack || store.pack.nCols <= 0
+          ? 0
+          : store.g6StereoPanMenuHeld
+            ? LP_SESSION_PALETTE.armed
+            : MINI_MK3_STEREO_PAN_IDLE_LED;
+      const distortionLed =
+        !store.pack || store.pack.nCols <= 0
+          ? 0
+          : store.g4DistortionMenuHeld
+            ? LP_SESSION_PALETTE.armed
+            : MINI_MK3_DISTORTION_IDLE_LED;
+      output.send(new Uint8Array([0xb0, MINI_MK3_CLIP_KIND_LEGEND_CC & 0x7f, kindTopLed]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_CLIP_TYPE_LEGEND_CC & 0x7f, typeSceneLed]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_STEREO_PAN_CC & 0x7f, stereoPanLed]));
+      output.send(new Uint8Array([0xb0, MINI_MK3_DISTORTION_CC & 0x7f, distortionLed]));
+    } catch (err) {
+      console.warn("Launchpad Mini MK3 pack-nav LED (CC) failed:", name, err);
+    }
+  });
+}
+
+/** Load the sample set for `slug` — remote catalog uses each entry’s pack.json URL (same as web Sample set). */
+function applyPackSelection(slug) {
+  if (getAssetSource() === "remote") {
+    const entry = store.remoteCatalogEntries?.find((e) => e.slug === slug);
+    if (!entry) return Promise.resolve();
+    setRemotePackUiStatus("loading", `Loading “${entry.title}”…`);
+    return applyPackFromUrl(entry.packJsonUrl);
+  }
+  return applyPack(slug);
 }
 
 function cyclePackFromHardware(delta) {
@@ -1131,8 +1204,12 @@ function cyclePackFromHardware(delta) {
   const slug = opt?.value;
   if (slug == null || slug === "") return;
   dom.pack.value = slug;
-  applyPack(slug).catch((e) => {
-    dom.midi.textContent = `Load error: ${e.message ?? e}. ${assetLoadErrorHint()}`;
+  applyPackSelection(slug).catch((e) => {
+    const hint = getAssetSource() === "remote" ? remotePackFetchErrorHint(e) : assetLoadErrorHint();
+    if (getAssetSource() === "remote") {
+      setRemotePackUiStatus("error", `✗ ${e.message ?? e}${hint}`);
+    }
+    dom.midi.textContent = `Load error: ${e.message ?? e}.${hint}`;
   });
 }
 
@@ -1396,19 +1473,14 @@ function setHStopModifierHeld(physicalCol, on) {
   if (on) store.hStopModifierPhysicalCols.add(physicalCol);
   else store.hStopModifierPhysicalCols.delete(physicalCol);
   applyHStopModifierWebClasses();
-  if (
-    store.midiAccess &&
-    !store.g7VolumeMenuHeld &&
-    !store.g6StereoPanMenuHeld &&
-    !store.g4DistortionMenuHeld &&
-    !store.scene4EqMenuHeld &&
-    !store.scene5CompressorMenuHeld &&
-    !store.scene7DelayMenuHeld &&
-    !store.scene8ReverbMenuHeld
-  ) {
+  if (store.midiAccess && !store.g7VolumeMenuHeld && !store.g6StereoPanMenuHeld) {
     queueMicrotask(() => refreshLaunchpadStripRowHIdleHardware());
   }
 }
+
+
+
+
 
 function packColumnIndexForLoopId(loopId) {
   if (!store.pack) return null;
@@ -1538,6 +1610,10 @@ function refreshColumnMuteVisuals() {
   applyColumnMuteWebPadClasses();
   if (store.midiAccess) queueMicrotask(() => refreshLaunchpadSessionClipPadsHardwareOnly());
 }
+
+
+
+
 
 function applyColumnMuteGains(logicalCol, muted, physicalCol) {
   if (!store.pack || logicalCol < 0) return;
@@ -1990,6 +2066,36 @@ function soleG7SelectedClipLoopId() {
   if (store.g7SelectedClipLoopIds.size !== 1) return null;
   return [...store.g7SelectedClipLoopIds][0];
 }
+
+
+
+/** Normalize stored pan (0…8; legacy 0…7 sum-7 bumps max to 8). */
+
+/** Map strip column 0…7 (pads **1**…**8**) to pan step **1**…**8** (L+R=8). */
+
+/** Right pan step 0…8 (default 4 = center). Left = 8 − right (L+R=8). */
+
+
+
+
+
+/** Filled stars only: count = volume step (1…8 → ★…★★★★★★★★). */
+
+/** Web clip pads: lower-left row of filled stars (count = volume step). */
+
+/** L/R pan bar widths for clip pad top indicator (steps 0…8, L+R=8). */
+
+/** Web clip pads: top bar — blue = left, amber = right (L+R=8). */
+
+
+
+
+
+/** Wrap `.tp` + `.ch-lvl` so mono/stereo sits beside loop/oneshot (not over volume stars). */
+
+/** Web clip pads: **m** / **s** beside loop/oneshot type from WAV channel count. */
+
+/** When exactly one clip is selected in the **8G** volume menu, return its `loopId`. */
 
 function applyVoiceGainLevels(voice, loopId, loop) {
   if (!voice?.gain || !loop) return;
@@ -3527,6 +3633,7 @@ function applyG7VolumeMenuWebClasses() {
     pad.setAttribute("aria-pressed", store.g7VolumeMenuHeld ? "true" : "false");
   }
   for (const pad of dom.grid.querySelectorAll('button.pad.utility[data-utility-row="7"]')) {
+    if (pad.dataset.h8ClockMenuStrip === "true") continue;
     const dc = Number(pad.dataset.displayCol);
     const nm = pad.querySelector(".nm");
     if (nm && Number.isFinite(dc)) {
@@ -4116,6 +4223,10 @@ function allG6SelectedClipsHaveRightPan(step) {
   }
   return true;
 }
+
+/** True when every selected clip shares this left strip step (L1…L8) — drives white strip LED on web + Launchpad. */
+
+/** True when every selected clip shares this right pan step (R0…R8). */
 
 function updateG6VoiceStereoPanForLoop(loopId) {
   updateG7VoiceGainForLoop(loopId);
@@ -5103,6 +5214,10 @@ function prepareMobileMidiSession() {
   }
 }
 
+/** Avoid stale row/col flip or scroll on phone after desktop use. */
+
+/** Align web clip window with hardware after connect (hardware row offset may be non-zero). */
+
 /** Vertical scroll through `session.channels` when taller than six clip rows (A–F). */
 function applySessionRowScroll(delta) {
   if (!store.pack?.sessionChannelsFull || store.pack.nCols <= 0) return;
@@ -5538,6 +5653,7 @@ function stopAllLoops() {
   setG7VolumeMenuHeld(false);
   setG6StereoPanMenuHeld(false);
   setG4DistortionMenuHeld(false);
+  setG6StereoPanMenuHeld(false);
   for (const [id, tid] of [...store.pendingLoopStartTimers.entries()]) {
     clearTimeout(tid);
     setPadArmed(id, false);
@@ -6167,6 +6283,13 @@ function renderGrid(packState) {
               }
               return;
             }
+            if (store.g6StereoPanMenuHeld) {
+              if (isG7ClipMultiSelectSessionPadKey(pk)) {
+                const lid = getLoopIdForSessionClipPadOrScan(pk);
+                if (lid != null) toggleG6ClipLoopSelection(lid);
+              }
+              return;
+            }
             if (store.scene8ReverbMenuHeld) {
               if (isG7ClipMultiSelectSessionPadKey(pk)) {
                 const lid = getLoopIdForSessionClipPadOrScan(pk);
@@ -6436,6 +6559,13 @@ function remotePackFetchErrorHint(err) {
   }
   return "";
 }
+
+/** Remember URL while typing (before a successful load). */
+
+
+/** @param {"idle"|"loading"|"ok"|"error"} state */
+
+
 
 async function applyPackFromUrl(packJsonUrl) {
   const token = ++store.packLoadToken;
@@ -7586,25 +7716,24 @@ function onAssetSourceChange() {
   });
 }
 
-dom.pack.addEventListener("change", () => {
-  if (getAssetSource() === "remote") {
-    const entry = store.remoteCatalogEntries?.find((e) => e.slug === dom.pack?.value);
-    if (!entry) return;
-    setRemotePackUiStatus("loading", `Loading “${entry.title}”…`);
-    applyPackFromUrl(entry.packJsonUrl).catch((e) => {
-      const hint = remotePackFetchErrorHint(e);
+dom.pack?.addEventListener("change", () => {
+  const slug = dom.pack?.value;
+  if (!slug) return;
+  applyPackSelection(slug).catch((e) => {
+    const hint = getAssetSource() === "remote" ? remotePackFetchErrorHint(e) : assetLoadErrorHint();
+    if (getAssetSource() === "remote") {
       setRemotePackUiStatus("error", `✗ ${e.message ?? e}${hint}`);
-      if (dom.midi) dom.midi.textContent = `Load error: ${e.message ?? e}.${hint}`;
-    });
-    return;
-  }
-  applyPack(dom.pack.value).catch((e) => {
-    dom.midi.textContent = `Load error: ${e.message ?? e}`;
+    }
+    dom.midi.textContent = `Load error: ${e.message ?? e}.${hint}`;
   });
 });
 
 dom.btnLoadRemotePack?.addEventListener("click", () => {
   loadRemotePackFromUi();
+});
+
+dom.packRemoteUrl?.addEventListener("input", () => {
+  persistRemotePackUrlDraft(dom.packRemoteUrl?.value ?? "");
 });
 
 dom.packRemoteUrl?.addEventListener("input", () => {

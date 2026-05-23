@@ -35,7 +35,7 @@ export const NOVATION_SAMPLE_PACKS = [
 ];
 
 /**
- * Modern map — Launchpad X / Mini MK3 / Pro MK3 (Arcade `To` bridge, **MIDI** port / browser Arcade).
+ * Modern map — Launchpad X / Mini MK3 / Pro MK3
  * DAW USB Session uses Ableton Live–style numbering → decode with Classic map when input name contains “DAW”.
  * Keys are Arcade positions: digit 1–8 = column (left→right), letter A–H = row index 0–7
  * (see `Ur`/`Fr` in Novation bundle). Clip loops use row indices 0…(n−1); rows 6–7 are G/H (**G** = column mute until note off + clear arm, **H** = stop column).

@@ -2,7 +2,7 @@
 """
 Local static server:
   - **/soundlib/** — files on disk next to server.py (run `python3 scripts/download_soundlib.py all` first).
-  - **/novation/** — reverse-proxy to intro.novationmusic.com so the browser can `fetch` pack.json and WAVs same-origin (avoids CDN CORS).
+  - **/novation/** — reverse-proxy to intro.novationmusic.com (optional fallback / CDN browsing).
 
 Run from this directory:
   python3 scripts/download_soundlib.py all   # once, to populate ./soundlib/

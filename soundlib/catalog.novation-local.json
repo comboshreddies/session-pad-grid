@@ -1,57 +1,18 @@
 {
   "title": "Novation Launchpad Arcade (local soundlib/ after scripts/download_soundlib.py)",
   "packs": [
-    {
-      "slug": "analogue-jewels",
-      "title": "Analogue Jewels"
-    },
-    {
-      "slug": "clap-trap",
-      "title": "Clap Trap"
-    },
-    {
-      "slug": "future-house-fusion",
-      "title": "Future House Fusion"
-    },
-    {
-      "slug": "harry-coade",
-      "title": "Harry Coade // Found Sound"
-    },
-    {
-      "slug": "hazy-beat",
-      "title": "Hazy Beat"
-    },
-    {
-      "slug": "high-roller",
-      "title": "High Roller"
-    },
-    {
-      "slug": "hypnotic-energy",
-      "title": "Hypnotic Energy"
-    },
-    {
-      "slug": "kaskobi-nytrix",
-      "title": "Kaskobi // Nytrix - Stay Here Forever"
-    },
-    {
-      "slug": "nick-hook",
-      "title": "Nick Hook"
-    },
-    {
-      "slug": "retro-grain",
-      "title": "Retro Grain"
-    },
-    {
-      "slug": "sugar-vape",
-      "title": "Sugar Vape"
-    },
-    {
-      "slug": "viral-hiphop",
-      "title": "Viral Hiphop"
-    },
-    {
-      "slug": "wonk-pop",
-      "title": "Wonk Pop"
-    }
+    { "slug": "analogue-jewels", "title": "Analogue Jewels" },
+    { "slug": "clap-trap", "title": "Clap Trap" },
+    { "slug": "future-house-fusion", "title": "Future House Fusion" },
+    { "slug": "harry-coade", "title": "Harry Coade // Found Sound" },
+    { "slug": "hazy-beat", "title": "Hazy Beat" },
+    { "slug": "high-roller", "title": "High Roller" },
+    { "slug": "hypnotic-energy", "title": "Hypnotic Energy" },
+    { "slug": "kaskobi-nytrix", "title": "Kaskobi // Nytrix - Stay Here Forever" },
+    { "slug": "nick-hook", "title": "Nick Hook" },
+    { "slug": "retro-grain", "title": "Retro Grain" },
+    { "slug": "sugar-vape", "title": "Sugar Vape" },
+    { "slug": "viral-hiphop", "title": "Viral Hiphop" },
+    { "slug": "wonk-pop", "title": "Wonk Pop" }
   ]
 }
