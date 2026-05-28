@@ -214,17 +214,33 @@ function isSessionFxStripMenuHeld() {
 }
 
 /**
- * Android sometimes decodes row-G/H strip hits as clip pads two columns right (+4 row letters toward top).
- * While an FX menu is open, remap those misreads back to the G/H strip row.
+ * Some Android Web MIDI hosts send row-G/H strip presses as classic clip notes +41
+ * (e.g. G1 classic 21 → wire 62 → clip 2C / silk B6). Recover the strip pad when that matches.
  */
-function stripPadKeyFromMisreadClipPad(padKey) {
-  if (!padKey || !isSessionFxStripMenuHeld()) return null;
+const MOBILE_CLASSIC_STRIP_GHOST_OFFSET = 41;
+
+function stripPadKeyFromMobileMisread(padKey, noteNum) {
+  if (!padKey || !dom.midiSysex?.checked || !isMobileSessionHost()) return null;
   const p = parsePadKey(padKey);
-  if (!p || p.col < 2 || p.rowIdx > LAUNCHPAD_CLIP_SESSION_MAX_ROW) return null;
-  const sc = p.col - 2;
-  const sr = p.rowIdx + 4;
-  if (sc < 0 || sc > 7 || sr < 6 || sr > 7) return null;
-  return padKeyFromPhysicalCell(sc, sr);
+  if (!p || p.rowIdx > LAUNCHPAD_CLIP_SESSION_MAX_ROW) return null;
+  const n = Number(noteNum);
+
+  for (const colDelta of [1, 2]) {
+    const sc = p.col - colDelta;
+    const sr = p.rowIdx + 4;
+    if (sc < 0 || sc > 7 || sr < 6 || sr > 7) continue;
+    const stripPk = padKeyFromPhysicalCell(sc, sr);
+    const stripNote = LAUNCHPAD_PAD_TO_NOTE_CLASSIC[stripPk];
+    if (stripNote != null && n === stripNote + MOBILE_CLASSIC_STRIP_GHOST_OFFSET) {
+      return stripPk;
+    }
+  }
+
+  if (!isSessionFxStripMenuHeld() || p.col < 2) return null;
+  const scFx = p.col - 2;
+  const srFx = p.rowIdx + 4;
+  if (scFx < 0 || scFx > 7 || srFx < 6 || srFx > 7) return null;
+  return padKeyFromPhysicalCell(scFx, srFx);
 }
 
 function portLooksLikeNovationLaunchpad(portName) {
@@ -6974,7 +6990,7 @@ function handleMidiMessage(ev) {
 
   let padKey = padKeyFromNote(noteNum, port);
   if (dom.midiSysex?.checked && isMobileSessionHost()) {
-    const stripPk = stripPadKeyFromMisreadClipPad(padKey);
+    const stripPk = stripPadKeyFromMobileMisread(padKey, noteNum);
     if (stripPk) padKey = stripPk;
   }
 
