@@ -214,33 +214,19 @@ function isSessionFxStripMenuHeld() {
 }
 
 /**
- * Some Android Web MIDI hosts send row-G/H strip presses as classic clip notes +41
- * (e.g. G1 classic 21 → wire 62 → clip 2C / silk B6). Recover the strip pad when that matches.
+ * While an FX menu is held, some Android hosts decode row-G/H strip hits as clip pads
+ * two columns right (+4 row letters toward the top). Do not use note +41 here — that
+ * byte is shared by real clip pads (e.g. 2C) and would mute/stop instead of playing.
  */
-const MOBILE_CLASSIC_STRIP_GHOST_OFFSET = 41;
-
-function stripPadKeyFromMobileMisread(padKey, noteNum) {
+function stripPadKeyFromMobileFxMenuMisread(padKey) {
   if (!padKey || !dom.midiSysex?.checked || !isMobileSessionHost()) return null;
+  if (!isSessionFxStripMenuHeld()) return null;
   const p = parsePadKey(padKey);
-  if (!p || p.rowIdx > LAUNCHPAD_CLIP_SESSION_MAX_ROW) return null;
-  const n = Number(noteNum);
-
-  for (const colDelta of [1, 2]) {
-    const sc = p.col - colDelta;
-    const sr = p.rowIdx + 4;
-    if (sc < 0 || sc > 7 || sr < 6 || sr > 7) continue;
-    const stripPk = padKeyFromPhysicalCell(sc, sr);
-    const stripNote = LAUNCHPAD_PAD_TO_NOTE_CLASSIC[stripPk];
-    if (stripNote != null && n === stripNote + MOBILE_CLASSIC_STRIP_GHOST_OFFSET) {
-      return stripPk;
-    }
-  }
-
-  if (!isSessionFxStripMenuHeld() || p.col < 2) return null;
-  const scFx = p.col - 2;
-  const srFx = p.rowIdx + 4;
-  if (scFx < 0 || scFx > 7 || srFx < 6 || srFx > 7) return null;
-  return padKeyFromPhysicalCell(scFx, srFx);
+  if (!p || p.col < 2 || p.rowIdx > LAUNCHPAD_CLIP_SESSION_MAX_ROW) return null;
+  const sc = p.col - 2;
+  const sr = p.rowIdx + 4;
+  if (sc < 0 || sc > 7 || sr < 6 || sr > 7) return null;
+  return padKeyFromPhysicalCell(sc, sr);
 }
 
 function portLooksLikeNovationLaunchpad(portName) {
@@ -6989,8 +6975,9 @@ function handleMidiMessage(ev) {
   vel = d2;
 
   let padKey = padKeyFromNote(noteNum, port);
+  const padKeyBeforeStripFix = padKey;
   if (dom.midiSysex?.checked && isMobileSessionHost()) {
-    const stripPk = stripPadKeyFromMobileMisread(padKey, noteNum);
+    const stripPk = stripPadKeyFromMobileFxMenuMisread(padKey);
     if (stripPk) padKey = stripPk;
   }
 
@@ -7490,6 +7477,10 @@ function handleMidiMessage(ev) {
   }
   const mapHint = padDecodeNoteMapHint(noteNum, port);
   const mobileFix = sessionNoteMapDebugExtra(noteNum, padKey);
+  const stripFixHint =
+    padKeyBeforeStripFix && padKey !== padKeyBeforeStripFix
+      ? `mobile strip fix ${padKeyBeforeStripFix} → ${padKey}`
+      : null;
   setMidiDebugLine([
     port.slice(0, 56),
     raw,
@@ -7497,8 +7488,9 @@ function handleMidiMessage(ev) {
     padKey,
     mapHint,
     mobileFix,
+    stripFixHint,
     flipPackHint || null,
-    loopId != null ? `loop ${loopId}` : null,
+    loopId != null ? `loop ${loopId}` : clipCell ? "no loop in pack for this pad" : null,
     uiCellHint,
     syncHint,
   ]);
