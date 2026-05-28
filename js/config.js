@@ -182,6 +182,8 @@ export const LP_SESSION_SCENE4_EQ_MENU = {
   clipPurple: 48,
   stripRowG: 41,
   stripRowH: 21,
+  /** Row G HPF step while held (orange — contrasts blue idle strip). */
+  stripStepApplyOrange: 62,
   stripStepApplyYellow: 13,
   stripStepQueryPurple: 48,
   stripStepCurrentG: 37,

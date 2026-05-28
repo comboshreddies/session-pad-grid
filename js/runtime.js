@@ -148,39 +148,6 @@ function usesClassicSessionNoteMap(midiPortName = "") {
 }
 
 /**
- * Some Android Web MIDI hosts deliver classic Session notes ~42 too low for silk cols C–F rows 5–8
- * (C5→A1, D5→B1, …). Bottom-row pads (A1–B4) often use modern bytes instead — only remap when
- * the note does not match the modern map (avoids clobbering a valid modern 1H on note 112, etc.).
- */
-const MOBILE_CLASSIC_LOW_OFFSET = 42;
-
-/**
- * False-low classic bytes land on cols A/B; true pad is +42 and two columns right, four rows up.
- * (C5→1H should be 3D; only when decode col ≤ B — E/F false-low on C/D still need modern notes.)
- */
-function applyMobileClassicLowNoteFix(note, classicPad) {
-  const n = Number(note);
-  const cp = classicPad ? parsePadKey(classicPad) : null;
-  if (!cp) return classicPad;
-  const altN = n + MOBILE_CLASSIC_LOW_OFFSET;
-  const alt = altN <= 127 ? noteToPadClassic[String(altN)] ?? null : null;
-  const fixP = alt ? parsePadKey(alt) : null;
-  if (
-    !fixP ||
-    fixP.col !== cp.col + 2 ||
-    fixP.rowIdx !== cp.rowIdx - 4 ||
-    fixP.rowIdx > 3 ||
-    fixP.rowIdx > LAUNCHPAD_CLIP_SESSION_MAX_ROW
-  ) {
-    return classicPad;
-  }
-  if (cp.col <= 1) return alt;
-  if (cp.col >= 2 && cp.col <= 3 && cp.rowIdx >= 5) return alt;
-  if (cp.col >= 2 && cp.col <= 3 && cp.rowIdx === 4 && fixP.rowIdx === 0) return alt;
-  return classicPad;
-}
-
-/**
  * Classic Session notes; some mobile hosts deliver a note ~16 too low for pads in columns 5–8 only
  * (e.g. raw 35 → 5F, should be 51 → 1D). The +16 correction must not run on legitimate row-E/F notes in
  * cols 5–6 (e.g. 45 → 5E, 36 → 6F) — that wrongly remapped 5E → 1C and broke E/F columns on phones.
@@ -207,7 +174,7 @@ function resolveClassicSessionPadKey(note) {
   return direct;
 }
 
-/** Phone + Session SysEx: reconcile classic vs modern note bytes (rows 1–4 vs 5–8 differ on some hosts). */
+/** Phone + Session SysEx: prefer modern bytes for clip rows when host sends them; never remap valid classic A/B. */
 function resolveMobileSessionPadKey(note, classicPad, modernPad) {
   const n = Number(note);
   const modernMatches =
@@ -217,47 +184,45 @@ function resolveMobileSessionPadKey(note, classicPad, modernPad) {
   const mp = modernPad ? parsePadKey(modernPad) : null;
   const cp = classicPad ? parsePadKey(classicPad) : null;
 
-  if (classicMatches && classicPad) {
-    const lowFixed = applyMobileClassicLowNoteFix(n, classicPad);
-    if (lowFixed !== classicPad) return lowFixed;
-  }
-
   if (
     modernMatches &&
     mp &&
-    mp.rowIdx <= 3 &&
+    mp.rowIdx <= LAUNCHPAD_CLIP_SESSION_MAX_ROW &&
     mp.col >= 2 &&
     mp.col < 6
   ) {
     if (!classicMatches) return modernPad;
     if (cp && cp.col <= 1 && mp.col >= cp.col + 2) return modernPad;
-    if (classicMatches && cp && (cp.col >= 6 || cp.rowIdx > 3)) return modernPad;
-    if (
-      classicMatches &&
-      cp &&
-      mp &&
-      cp.col >= 2 &&
-      cp.col <= 3 &&
-      mp.rowIdx < cp.rowIdx
-    ) {
-      return modernPad;
-    }
   }
 
-  if (modernMatches && classicMatches) {
-    if (modernPad === classicPad) return modernPad;
-    if (cp && mp && cp.rowIdx <= LAUNCHPAD_CLIP_SESSION_MAX_ROW) {
-      if (cp.col <= 1 && mp.col >= 2) return modernPad;
-      if (mp.rowIdx <= 3 && mp.col >= 2 && mp.col < 6) return modernPad;
-      if (cp.col >= 2 && cp.col <= 3 && mp.rowIdx < cp.rowIdx) return modernPad;
-      if (mp.rowIdx < cp.rowIdx) return modernPad;
-      if (mp.col > cp.col) return modernPad;
-    }
-    return classicPad;
-  }
-  if (modernMatches) return modernPad;
   if (classicMatches) return classicPad;
   return modernPad ?? classicPad;
+}
+
+function isSessionFxStripMenuHeld() {
+  return !!(
+    store.g6StereoPanMenuHeld ||
+    store.scene4EqMenuHeld ||
+    store.scene5CompressorMenuHeld ||
+    store.scene7DelayMenuHeld ||
+    store.scene8ReverbMenuHeld ||
+    store.g4DistortionMenuHeld ||
+    store.g7VolumeMenuHeld
+  );
+}
+
+/**
+ * Android sometimes decodes row-G/H strip hits as clip pads two columns right (+4 row letters toward top).
+ * While an FX menu is open, remap those misreads back to the G/H strip row.
+ */
+function stripPadKeyFromMisreadClipPad(padKey) {
+  if (!padKey || !isSessionFxStripMenuHeld()) return null;
+  const p = parsePadKey(padKey);
+  if (!p || p.col < 2 || p.rowIdx > LAUNCHPAD_CLIP_SESSION_MAX_ROW) return null;
+  const sc = p.col - 2;
+  const sr = p.rowIdx + 4;
+  if (sc < 0 || sc > 7 || sr < 6 || sr > 7) return null;
+  return padKeyFromPhysicalCell(sc, sr);
 }
 
 function portLooksLikeNovationLaunchpad(portName) {
@@ -2480,7 +2445,7 @@ function refreshLaunchpadScene4EqStripHardware() {
     if (store.scene4HighPassStepSelection != null && store.scene4HighPassStepSelection === stepHp) {
       vG =
         store.scene4SelectedClipLoopIds.size > 0
-          ? LP_SESSION_SCENE4_EQ_MENU.stripStepApplyYellow
+          ? LP_SESSION_SCENE4_EQ_MENU.stripStepApplyOrange
           : LP_SESSION_SCENE4_EQ_MENU.stripStepQueryPurple;
     } else if (soleEq != null && soleEq.highPassStep === stepHp) {
       vG = LP_SESSION_SCENE4_EQ_MENU.stripStepCurrentG;
@@ -5350,12 +5315,8 @@ function sessionNoteMapDebugExtra(note, padKey) {
     return null;
   }
   const parts = [`raw classic ${direct} → ${padKey}`];
-  const lowFixed = applyMobileClassicLowNoteFix(note, direct);
-  if (lowFixed && lowFixed === padKey && lowFixed !== direct) {
-    parts.push(` (mobile +${MOBILE_CLASSIC_LOW_OFFSET} col A/B fix)`);
-  }
   const bumped = note + 16 <= 127 ? noteToPadClassic[String(note + 16)] ?? null : null;
-  if (bumped && bumped === padKey && bumped !== lowFix) {
+  if (bumped && bumped === padKey && bumped !== direct) {
     parts.push(` (mobile +16 fix from note ${note + 16})`);
   }
   const modernRaw = noteToPadModern[String(note)] ?? null;
@@ -7009,7 +6970,11 @@ function handleMidiMessage(ev) {
   noteNum = d1;
   vel = d2;
 
-  const padKey = padKeyFromNote(noteNum, port);
+  let padKey = padKeyFromNote(noteNum, port);
+  if (dom.midiSysex?.checked && isMobileSessionHost()) {
+    const stripPk = stripPadKeyFromMisreadClipPad(padKey);
+    if (stripPk) padKey = stripPk;
+  }
 
   if (!padKey) {
     const parts = [
