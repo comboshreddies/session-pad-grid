@@ -174,7 +174,10 @@ function resolveClassicSessionPadKey(note) {
   return direct;
 }
 
-/** Phone + Session SysEx: prefer modern bytes for clip rows when host sends them; never remap valid classic A/B. */
+/**
+ * Phone + Session SysEx: classic Session notes on input; modern only when the byte is not in the classic map.
+ * Classic and modern share 32 note numbers (e.g. 21 → 1G vs 6B) — never prefer modern when classic matches.
+ */
 function resolveMobileSessionPadKey(note, classicPad, modernPad) {
   const n = Number(note);
   const modernMatches =
@@ -182,17 +185,16 @@ function resolveMobileSessionPadKey(note, classicPad, modernPad) {
   const classicMatches =
     classicPad != null && LAUNCHPAD_PAD_TO_NOTE_CLASSIC[classicPad] === n;
   const mp = modernPad ? parsePadKey(modernPad) : null;
-  const cp = classicPad ? parsePadKey(classicPad) : null;
 
   if (
     modernMatches &&
+    !classicMatches &&
     mp &&
     mp.rowIdx <= LAUNCHPAD_CLIP_SESSION_MAX_ROW &&
     mp.col >= 2 &&
     mp.col < 6
   ) {
-    if (!classicMatches) return modernPad;
-    if (cp && cp.col <= 1 && mp.col >= cp.col + 2) return modernPad;
+    return modernPad;
   }
 
   if (classicMatches) return classicPad;
