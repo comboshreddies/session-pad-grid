@@ -58,6 +58,7 @@ import {
   ASSET_SOURCE_STORAGE_KEY,
   SYNC_LOOP_TICKS_STORAGE_KEY,
   CUSTOM_PACK_URL_STORAGE_KEY,
+  SAMPLE_PACK_SLUG_STORAGE_KEY,
 } from "./config.js";
 
 import { store } from "./store.js";
@@ -2028,18 +2029,24 @@ function refreshClipPanBars() {
   }
 }
 
-function rememberLoopChannelCount(url, ch) {
-  if (!url || ch == null || !Number.isFinite(ch) || ch < 1) return;
-  store.loopChannelCountByUrl.set(url, ch);
+function loopAudioCacheKey(loop) {
+  const slug = store.pack?.slug ?? store.currentPackSlug ?? "";
+  return `${slug}\0${loop?.url ?? ""}`;
+}
+
+function rememberLoopChannelCount(loop, ch) {
+  if (!loop?.url || ch == null || !Number.isFinite(ch) || ch < 1) return;
+  store.loopChannelCountByUrl.set(loopAudioCacheKey(loop), ch);
 }
 
 function getLoopChannelCount(loop) {
   if (!loop?.url) return null;
-  const cached = store.loopChannelCountByUrl.get(loop.url);
+  const key = loopAudioCacheKey(loop);
+  const cached = store.loopChannelCountByUrl.get(key);
   if (cached != null) return cached;
-  const buf = store.bufferCache.get(loop.url);
+  const buf = store.bufferCache.get(key);
   if (buf) {
-    rememberLoopChannelCount(loop.url, buf.numberOfChannels);
+    rememberLoopChannelCount(loop, buf.numberOfChannels);
     return buf.numberOfChannels;
   }
   return null;
@@ -2053,7 +2060,7 @@ async function probeLoopChannelCount(loop) {
   if (!res.ok) throw new Error(`wav ${res.status}`);
   const arr = await res.arrayBuffer();
   const ch = wavChannelCountFromArrayBuffer(arr);
-  if (ch != null) rememberLoopChannelCount(loop.url, ch);
+  if (ch != null) rememberLoopChannelCount(loop, ch);
   return ch;
 }
 
@@ -5067,11 +5074,30 @@ function rebuildPackSelect(options) {
   }
 }
 
+function persistSamplePackSlug(slug) {
+  if (!slug) return;
+  try {
+    localStorage.setItem(SAMPLE_PACK_SLUG_STORAGE_KEY, slug);
+  } catch {
+    /* ignore */
+  }
+}
+
+function savedSamplePackSlug() {
+  try {
+    const s = localStorage.getItem(SAMPLE_PACK_SLUG_STORAGE_KEY);
+    return s && typeof s === "string" ? s.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 function fillPackSelectLocal() {
   rebuildPackSelect(SAMPLE_PACKS);
+  const saved = savedSamplePackSlug();
   const slug =
-    SAMPLE_PACKS.some((p) => p.slug === store.currentPackSlug) ?
-      store.currentPackSlug
+    SAMPLE_PACKS.some((p) => p.slug === saved) ? saved
+    : SAMPLE_PACKS.some((p) => p.slug === store.currentPackSlug) ? store.currentPackSlug
     : SAMPLE_PACKS[0].slug;
   dom.pack.value = slug;
   store.currentPackSlug = slug;
@@ -5129,6 +5155,10 @@ function arcadeAudioBaseSlash(packJsonUrl) {
 }
 
 function packAssetBaseSlash() {
+  if (getAssetSource() === "local") {
+    const base = assetBase();
+    return base.endsWith("/") ? base : `${base}/`;
+  }
   const arcade = arcadeAudioBaseSlash(store.remotePackJsonUrl);
   if (arcade) return arcade.endsWith("/") ? arcade : `${arcade}/`;
   if (store.remotePackBaseUrl) {
@@ -5160,7 +5190,11 @@ function absoluteUrl(relativeFromPack) {
   const baseSlash = packAssetBaseSlash();
   // Custom URL / catalog: base is the pack folder (…/freesound-loops/), but loop.url still
   // includes the slug (freesound-loops/Drums/…). Strip duplicate slug — not a CORS issue.
-  if (store.remotePackBaseUrl && store.currentPackSlug) {
+  if (
+    getAssetSource() === "remote" &&
+    store.remotePackBaseUrl &&
+    store.currentPackSlug
+  ) {
     const slugPrefix = `${store.currentPackSlug}/`;
     if (rel.startsWith(slugPrefix)) rel = rel.slice(slugPrefix.length);
   }
@@ -5435,22 +5469,29 @@ async function ensureAudio() {
 }
 
 async function getBuffer(loop) {
-  const key = loop.url;
+  const key = loopAudioCacheKey(loop);
   if (store.bufferCache.has(key)) return store.bufferCache.get(key);
   const ctx = await ensureAudio();
-  const res = await fetch(absoluteUrl(loop.url), { cache: "no-store" });
-  if (!res.ok) throw new Error(`wav ${res.status}`);
+  const wavUrl = absoluteUrl(loop.url);
+  const res = await fetch(wavUrl, { cache: "no-store" });
+  if (!res.ok) throw new Error(`wav ${res.status}: ${wavUrl}`);
   const arr = await res.arrayBuffer();
   const buf = await ctx.decodeAudioData(arr.slice(0));
   store.bufferCache.set(key, buf);
-  rememberLoopChannelCount(key, buf.numberOfChannels);
+  rememberLoopChannelCount(loop, buf.numberOfChannels);
   return buf;
 }
 
-async function preloadPackLoops(packState) {
+async function preloadPackLoops(packState, loadToken = store.packLoadToken) {
   store.bufferCache.clear();
+  store.loopChannelCountByUrl.clear();
   const top = packState.raw.loops.slice(0, 12);
-  await Promise.all(top.map((l) => getBuffer(l).catch(() => null)));
+  await Promise.all(
+    top.map(async (l) => {
+      if (loadToken !== store.packLoadToken) return null;
+      return getBuffer(l).catch(() => null);
+    }),
+  );
 }
 
 /** Fire-and-forget sample with playing LED until `onended` (not in `store.activeLoops`). */
@@ -6633,6 +6674,8 @@ function remotePackFetchErrorHint(err) {
 async function applyPackFromUrl(packJsonUrl) {
   const token = ++store.packLoadToken;
   stopAllLoops();
+  store.bufferCache.clear();
+  store.loopChannelCountByUrl.clear();
   store.clipKindLegendHeld = false;
   store.clipTypeLegendHeld = false;
   store.clipKindLegendLatched = false;
@@ -6668,12 +6711,14 @@ async function applyPackFromUrl(packJsonUrl) {
     const n = sendLaunchpadSessionSysex();
     refreshMidiStatus(n);
   }
-  preloadPackLoops(store.pack).catch(() => {});
+  preloadPackLoops(store.pack, token).catch(() => {});
 }
 
 async function applyPack(slug) {
   const token = ++store.packLoadToken;
   stopAllLoops();
+  store.bufferCache.clear();
+  store.loopChannelCountByUrl.clear();
   clearRemotePackSource();
   store.clipKindLegendHeld = false;
   store.clipTypeLegendHeld = false;
@@ -6688,27 +6733,35 @@ async function applyPack(slug) {
   try {
     nextState = await loadPack(slug);
   } catch (e) {
-    if (token === store.packLoadToken) throw e;
+    if (token === store.packLoadToken) {
+      if (dom.pack) dom.pack.value = store.currentPackSlug;
+      throw e;
+    }
     return;
   }
   if (token !== store.packLoadToken) return;
   setRemotePackUiStatus("idle");
   store.currentPackSlug = slug;
   store.pack = nextState;
-  store.loopChannelCountByUrl.clear();
+  persistSamplePackSlug(slug);
   renderGrid(store.pack);
   probeAllPackChannelCounts(store.pack).catch(() => {});
+  const sample0 = store.pack.raw?.loops?.[0];
+  const audioHint = sample0?.url ? ` · audio: ${sample0.url}` : "";
   if (store.midiAccess) {
     const n = sendLaunchpadSessionSysex();
     refreshMidiStatus(n);
+    if (dom.midi) {
+      dom.midi.textContent += ` · Loaded “${store.pack.title}” [${slug}]${audioHint}`;
+    }
   } else {
-    let msg = `Loaded “${store.pack.title}” (${store.pack.nCols}×${store.pack.nRows}). Connect MIDI when ready.`;
+    let msg = `Loaded “${store.pack.title}” [${slug}] (${store.pack.nCols}×${store.pack.nRows})${audioHint}. Connect MIDI when ready.`;
     if ((store.pack.nSessionRowsFull ?? 0) > LAUNCHPAD_CLIP_SESSION_ROW_COUNT) {
       msg += ` · Pack has ${store.pack.nSessionRowsFull} session rows per column; only six clip rows (A–F) fit the grid — on **Launchpad Mini MK3** use the **DAW** input **▲/▼** above the matrix to scroll rows (G/H stay mute/stop).`;
     }
     dom.midi.textContent = msg;
   }
-  preloadPackLoops(store.pack).catch(() => {});
+  preloadPackLoops(store.pack, token).catch(() => {});
 }
 
 function handleMidiMessage(ev) {

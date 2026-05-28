@@ -245,6 +245,7 @@ export const GRID_FLIP_STORAGE_KEY = `${STORAGE_KEY_PREFIX}gridFlip`;
 export const MIDI_INPUT_STORAGE_KEY = `${STORAGE_KEY_PREFIX}midiInputId`;
 export const MIDI_SYSEX_SESSION_STORAGE_KEY = `${STORAGE_KEY_PREFIX}sendDawSessionSysex`;
 export const ASSET_SOURCE_STORAGE_KEY = `${STORAGE_KEY_PREFIX}assetSource`;
+export const SAMPLE_PACK_SLUG_STORAGE_KEY = `${STORAGE_KEY_PREFIX}samplePackSlug`;
 export const CUSTOM_PACK_URL_STORAGE_KEY = `${STORAGE_KEY_PREFIX}customPackJsonUrl`;
 export const SYNC_LOOP_TICKS_STORAGE_KEY = `${STORAGE_KEY_PREFIX}syncPurpleTicks`;
 
