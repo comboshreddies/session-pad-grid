@@ -149,8 +149,8 @@ function usesClassicSessionNoteMap(midiPortName = "") {
 
 /**
  * Classic Session notes; some mobile hosts deliver a note ~16 too low for pads in columns 5–8 only
- * (e.g. raw 35 → 5F, should be 51 → 1D). Do not apply +16 when the raw decode is already in cols 1–4
- * (that wrongly mapped 1B → 7A and broke clip triggers / volume selection on demo-pulse cols 1–6).
+ * (e.g. raw 35 → 5F, should be 51 → 1D). The +16 correction must not run on legitimate row-E/F notes in
+ * cols 5–6 (e.g. 45 → 5E, 36 → 6F) — that wrongly remapped 5E → 1C and broke E/F columns on phones.
  */
 function resolveClassicSessionPadKey(note) {
   const n = Number(note);
@@ -163,9 +163,9 @@ function resolveClassicSessionPadKey(note) {
   if (
     directP &&
     bumpedP &&
-    directP.rowIdx <= LAUNCHPAD_CLIP_SESSION_MAX_ROW &&
+    directP.rowIdx === LAUNCHPAD_CLIP_SESSION_MAX_ROW &&
+    directP.col === 4 &&
     bumpedP.rowIdx <= LAUNCHPAD_CLIP_SESSION_MAX_ROW &&
-    directP.col >= 4 &&
     bumpedP.col < directP.col &&
     directP.col - bumpedP.col >= 4
   ) {
@@ -5244,6 +5244,17 @@ function padKeyFromNote(note, midiInputPortName = "") {
     return classicPad ?? modernPad;
   }
   if (dom.midiSysex?.checked && isMobileSessionHost()) {
+    const mp = modernPad ? parsePadKey(modernPad) : null;
+    const cp = classicPad ? parsePadKey(classicPad) : null;
+    const clipModern =
+      mp && mp.rowIdx <= LAUNCHPAD_CLIP_SESSION_MAX_ROW ? modernPad : null;
+    if (clipModern && cp && cp.rowIdx <= LAUNCHPAD_CLIP_SESSION_MAX_ROW) {
+      if (cp.col >= 6) return clipModern;
+      if (cp.col <= 1 && mp.col >= 2) return clipModern;
+      if (mp.col >= 5 && cp.col <= 4 && cp.rowIdx < mp.rowIdx && mp.rowIdx >= 4) return clipModern;
+    } else if (clipModern && (!classicPad || !cp || cp.rowIdx > LAUNCHPAD_CLIP_SESSION_MAX_ROW)) {
+      return clipModern;
+    }
     return classicPad ?? modernPad;
   }
   if (classicPad && modernPad && classicPad !== modernPad) {
